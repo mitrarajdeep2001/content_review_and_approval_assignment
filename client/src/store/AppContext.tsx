@@ -8,7 +8,6 @@ import React, {
 } from 'react';
 import type { AppContextType, AuthUser, ContentItem, FilterState } from '../types';
 import { getSession, saveSession, clearSession } from '../utils/auth';
-import { INITIAL_CONTENT } from './dummyData';
 import { generateId } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -22,8 +21,20 @@ const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getSession());
-  const [contentList, setContentList] = useState<ContentItem[]>(INITIAL_CONTENT);
+  const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
+
+  useEffect(() => {
+    const fetchContents = async () => {
+      try {
+        const response = await api.get('/content');
+        setContentList(response.data);
+      } catch (error) {
+        console.error('Failed to fetch contents:', error);
+      }
+    };
+    fetchContents();
+  }, []);
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -70,34 +81,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── Create Content ───────────────────────────────────────────────────────────
   const createContent = useCallback(
-    (data: { title: string; body: string; description: string; image: string }): ContentItem => {
+    async (formData: FormData): Promise<ContentItem> => {
       if (!currentUser) throw new Error('Not authenticated');
-      const now = new Date().toISOString();
-      const item: ContentItem = {
-        id: generateId(),
-        title: data.title,
-        image: data.image || 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60',
-        description: data.description,
-        body: data.body,
-        status: 'DRAFT',
-        currentStage: 1,
-        isLocked: false,
-        createdBy: currentUser.name,
-        createdAt: now,
-        updatedAt: now,
-        history: [
-          {
-            id: generateId(),
-            action: 'CREATED',
-            actor: currentUser.name,
-            role: currentUser.role,
-            timestamp: now,
-            comment: 'Draft created',
-          },
-        ],
-      };
-      setContentList((prev) => [item, ...prev]);
-      return item;
+      
+      try {
+        const response = await api.post('/content', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        const newItem = response.data;
+        setContentList((prev) => [newItem, ...prev]);
+        return newItem;
+      } catch (error) {
+        toast.error('Failed to create content');
+        throw error;
+      }
     },
     [currentUser]
   );

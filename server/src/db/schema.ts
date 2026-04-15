@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, pgEnum, integer, boolean } from 'drizzle-orm/pg-core';
 
 export const userRoleEnum = pgEnum('user_role', ['CREATOR', 'REVIEWER_L1', 'REVIEWER_L2']);
 
@@ -15,3 +15,22 @@ export const users = pgTable('users', {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export const contentStatusEnum = pgEnum('content_status', ['DRAFT', 'IN_REVIEW', 'CHANGES_REQUESTED', 'APPROVED']);
+
+export const contents = pgTable('contents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  body: text('body').notNull(),
+  image: text('image'),
+  status: contentStatusEnum('status').default('DRAFT').notNull(),
+  currentStage: integer('current_stage').default(1).notNull(),
+  isLocked: boolean('is_locked').default(false).notNull(),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Content = typeof contents.$inferSelect;
+export type NewContent = typeof contents.$inferInsert;

@@ -26,6 +26,7 @@ export function CreateContentPage() {
     image: PLACEHOLDER_IMAGES[0],
     customImage: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,16 +50,27 @@ export function CreateContentPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    const item = createContent({
-      title: form.title,
-      description: form.description,
-      body: form.body,
-      image: form.customImage || form.image,
-    });
-    toast.success('Draft saved successfully!');
-    navigate(`/content/${item.id}`);
-    setIsLoading(false);
+    
+    try {
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('description', form.description);
+      formData.append('body', form.body);
+      
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      } else {
+        formData.append('image', form.customImage || form.image);
+      }
+      
+      const item = await createContent(formData);
+      toast.success('Draft saved successfully!');
+      navigate(`/content/${item.id}`);
+    } catch (error) {
+      toast.error('Failed to save draft');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const selectedImage = form.customImage || form.image;
@@ -140,10 +152,13 @@ export function CreateContentPage() {
                 {PLACEHOLDER_IMAGES.map((url) => (
                   <button
                     key={url}
-                    onClick={() => setForm((p) => ({ ...p, image: url, customImage: '' }))}
+                    onClick={() => {
+                        setForm((p) => ({ ...p, image: url, customImage: '' }));
+                        setImageFile(null);
+                    }}
                     className={clsx(
                       'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0',
-                      form.image === url && !form.customImage
+                      form.image === url && !form.customImage && !imageFile
                         ? 'border-blue-500 shadow-sm'
                         : 'border-gray-200 hover:border-gray-300'
                     )}
@@ -153,11 +168,27 @@ export function CreateContentPage() {
                 ))}
               </div>
 
+              {/* Custom Image Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setImageFile(e.target.files[0]);
+                    setForm(p => ({ ...p, customImage: '', image: URL.createObjectURL(e.target.files![0]) }));
+                  }
+                }}
+                className="w-full mb-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:outline-none"
+              />
+
               {/* Custom URL */}
               <input
                 type="url"
                 value={form.customImage}
-                onChange={(e) => setForm((p) => ({ ...p, customImage: e.target.value }))}
+                onChange={(e) => {
+                    setForm((p) => ({ ...p, customImage: e.target.value }));
+                    setImageFile(null);
+                }}
                 placeholder="Or paste a custom image URL..."
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />

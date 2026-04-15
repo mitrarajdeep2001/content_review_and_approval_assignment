@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowRight, Shield, Eye, EyeOff } from 'lucide-react';
+import { Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { DEMO_USERS } from '../store/dummyData';
 import { ROLE_LABELS, ROLE_COLORS } from '../utils/constants';

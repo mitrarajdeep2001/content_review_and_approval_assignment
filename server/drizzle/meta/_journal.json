@@ -8,6 +8,13 @@
       "when": 1776251085797,
       "tag": "0000_lethal_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776253020082,
+      "tag": "0001_nasty_sharon_ventura",
+      "breakpoints": true
     }
   ]
 }

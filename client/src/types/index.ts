@@ -58,7 +58,7 @@ export interface AppContextType {
 
   // Content
   contentList: ContentItem[];
-  createContent: (data: { title: string; body: string; description: string; image: string }) => ContentItem;
+  createContent: (formData: FormData) => Promise<ContentItem>;
   updateContent: (id: string, data: Partial<Pick<ContentItem, 'title' | 'body' | 'description' | 'image'>>) => void;
   submitContent: (id: string) => void;
   approveContent: (id: string, comment?: string) => void;
