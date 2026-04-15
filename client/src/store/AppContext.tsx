@@ -2,14 +2,21 @@ import React, {
   createContext,
   useContext,
   useState,
-  useCallback,
   useMemo,
+  useEffect,
+  useCallback,
 } from 'react';
 import type { AppContextType, AuthUser, ContentItem, FilterState } from '../types';
 import { getSession, saveSession, clearSession } from '../utils/auth';
 import { INITIAL_CONTENT } from './dummyData';
 import { generateId } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  withCredentials: true,
+});
 
 const AppContext = createContext<AppContextType | null>(null);
 
@@ -19,14 +26,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
-  const login = useCallback((user: AuthUser) => {
-    saveSession(user);
-    setCurrentUser(user);
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        setCurrentUser(response.data);
+      } catch (error) {
+        // Not logged in or error, just clear current user
+        setCurrentUser(null);
+      }
+    };
+    fetchMe();
   }, []);
 
-  const logout = useCallback(() => {
-    clearSession();
-    setCurrentUser(null);
+  const login = useCallback(async (credentials: { email: string; password: string }) => {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      setCurrentUser(response.data);
+      saveSession(response.data);
+      toast.success(`Welcome back, ${response.data.name}!`);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      throw error;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout');
+      clearSession();
+      setCurrentUser(null);
+      toast.success('Logged out successfully');
+    } catch (error) {
+      toast.error('Logout failed');
+    }
   }, []);
 
   // ─── Filters ─────────────────────────────────────────────────────────────────

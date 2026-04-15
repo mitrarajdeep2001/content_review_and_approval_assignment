@@ -25,36 +25,32 @@ export function LoginPage() {
       toast.error('Please enter your email.');
       return;
     }
-
-    setIsLoading(true);
-    // Simulate auth delay
-    await new Promise((r) => setTimeout(r, 800));
-
-    const user = DEMO_USERS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (!user) {
-      toast.error('No account found with that email.');
-      setIsLoading(false);
+    if (!password.trim()) {
+      toast.error('Please enter your password.');
       return;
     }
 
-    login(user);
-    toast.success(`Welcome back, ${user.name}! 👋`);
-    navigate('/');
-    setIsLoading(false);
+    setIsLoading(true);
+    try {
+      await login({ email, password });
+      navigate('/');
+    } catch (error) {
+      // Error handled in AppContext toast
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleQuickLogin = async (userId: string) => {
-    const user = DEMO_USERS.find((u) => u.id === userId);
-    if (!user) return;
+  const handleQuickLogin = async (user: typeof DEMO_USERS[0]) => {
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 400));
-    login(user);
-    toast.success(`Logged in as ${user.name}`);
-    navigate('/');
-    setIsLoading(false);
+    try {
+      await login({ email: user.email, password: 'password123' });
+      navigate('/');
+    } catch (error) {
+      // Error handled in AppContext toast
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -150,7 +146,7 @@ export function LoginPage() {
             {DEMO_USERS.map((user) => (
               <button
                 key={user.id}
-                onClick={() => handleQuickLogin(user.id)}
+                onClick={() => handleQuickLogin(user)}
                 disabled={isLoading}
                 className="w-full flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 p-3 transition-all text-left group disabled:opacity-60"
               >

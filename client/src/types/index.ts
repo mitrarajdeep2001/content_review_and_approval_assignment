@@ -53,8 +53,8 @@ export interface FilterState {
 export interface AppContextType {
   // Auth
   currentUser: AuthUser | null;
-  login: (user: AuthUser) => void;
-  logout: () => void;
+  login: (credentials: { email: string; password: string }) => Promise<void>;
+  logout: () => Promise<void>;
 
   // Content
   contentList: ContentItem[];
