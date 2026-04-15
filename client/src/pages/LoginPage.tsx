@@ -175,12 +175,6 @@ export function LoginPage() {
             ))}
           </div>
         </div>
-
-        {/* Security note */}
-        <p className="text-center text-xs text-slate-500 mt-4 flex items-center justify-center gap-1.5">
-          <Shield className="h-3 w-3" />
-          Demo environment — no real data stored
-        </p>
       </div>
     </div>
   );
