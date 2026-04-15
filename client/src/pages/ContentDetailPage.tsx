@@ -15,7 +15,6 @@ import {
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { StatusBadge } from '../components/StatusBadge';
-import { StagePill } from '../components/StagePill';
 import { WorkflowProgress } from '../components/WorkflowProgress';
 import { ApprovalTimeline } from '../components/ApprovalTimeline';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -60,8 +59,7 @@ export function ContentDetailPage() {
 
   const canSubmit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
   const canEdit = currentUser.role === 'CREATOR' && item.status === 'CHANGES_REQUESTED';
-  const canApproveL1 = currentUser.role === 'REVIEWER_L1' && item.status === 'IN_REVIEW' && item.currentStage === 1;
-  const canApproveL2 = currentUser.role === 'REVIEWER_L2' && item.status === 'IN_REVIEW' && item.currentStage === 2;
+  const canApprove = (currentUser.role === 'REVIEWER_L1' || currentUser.role === 'REVIEWER_L2') && item.status === 'IN_REVIEW';
   const canReject =
     (currentUser.role === 'REVIEWER_L1' || currentUser.role === 'REVIEWER_L2') &&
     item.status === 'IN_REVIEW';
@@ -84,13 +82,10 @@ export function ContentDetailPage() {
   const handleApprove = async (comment?: string) => {
     await simulateLoading(() => {
       approveContent(item.id, comment);
-      const isStage2 = item.currentStage === 2;
-      toast.success(
-        isStage2 ? '🎉 Content fully approved and published!' : 'Stage 1 approved — moving to Stage 2!'
-      );
+      toast.success('🎉 Content approved and published!');
     });
     setActiveModal(null);
-    if (item.currentStage === 2) navigate('/');
+    navigate('/');
   };
 
   const handleReject = async (comment?: string) => {
@@ -147,7 +142,6 @@ export function ContentDetailPage() {
                 </h1>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={item.status} />
-                  <StagePill stage={item.currentStage} active={item.status === 'IN_REVIEW'} />
                 </div>
               </div>
 
@@ -259,16 +253,16 @@ export function ContentDetailPage() {
                   {/* Approve */}
                   <button
                     onClick={() => setActiveModal('approve')}
-                    disabled={(!canApproveL1 && !canApproveL2) || isLoading}
+                    disabled={!canApprove || isLoading}
                     className={clsx(
                       'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                      (canApproveL1 || canApproveL2)
+                      canApprove
                         ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     )}
                   >
                     <CheckCircle2 className="h-4 w-4" />
-                    {item.currentStage === 2 ? 'Final Approve' : 'Approve'}
+                    Approve
                   </button>
 
                   {/* Reject */}
@@ -287,7 +281,7 @@ export function ContentDetailPage() {
                   </button>
 
                   {/* Helper text */}
-                  {!canSubmit && !canEdit && !canApproveL1 && !canApproveL2 && !canReject && (
+                  {!canSubmit && !canEdit && !canApprove && !canReject && (
                     <p className="text-xs text-gray-400 text-center pt-1">
                       No actions available for your role at this stage.
                     </p>
@@ -317,13 +311,9 @@ export function ContentDetailPage() {
       />
       <ConfirmModal
         isOpen={activeModal === 'approve'}
-        title={item.currentStage === 2 ? 'Final Approval' : 'Approve for Stage 2'}
-        description={
-          item.currentStage === 2
-            ? 'This will mark the content as fully approved and published. This action cannot be undone.'
-            : 'This will advance the content to Stage 2 review. Add an optional comment for the creator.'
-        }
-        confirmLabel={item.currentStage === 2 ? 'Publish' : 'Approve & Advance'}
+        title="Approve Content"
+        description="This will mark the content as fully approved and published. This action cannot be undone."
+        confirmLabel="Publish"
         variant="success"
         commentPlaceholder="Add a review comment (optional)..."
         onConfirm={handleApprove}

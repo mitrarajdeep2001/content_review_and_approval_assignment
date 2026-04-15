@@ -15,6 +15,20 @@
       "when": 1776253020082,
       "tag": "0001_nasty_sharon_ventura",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776255351826,
+      "tag": "0002_tired_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776258690162,
+      "tag": "0003_melodic_lifeguard",
+      "breakpoints": true
     }
   ]
 }

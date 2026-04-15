@@ -150,7 +150,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return {
             ...item,
             status: 'IN_REVIEW' as const,
-            currentStage: 1 as const,
             isLocked: true,
             updatedAt: now,
             history: [
@@ -178,15 +177,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         prev.map((item) => {
           if (item.id !== id) return item;
 
-          // Validate reviewer role vs stage
-          if (currentUser.role === 'REVIEWER_L1' && item.currentStage !== 1) {
-            toast.error('You can only approve Stage 1 content.');
-            return item;
-          }
-          if (currentUser.role === 'REVIEWER_L2' && item.currentStage !== 2) {
-            toast.error('You can only approve Stage 2 content.');
-            return item;
-          }
           if (item.status !== 'IN_REVIEW') {
             toast.error('Content must be in review to approve.');
             return item;
@@ -194,44 +184,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           const now = new Date().toISOString();
 
-          if (item.currentStage === 1) {
-            // Stage 1 → Stage 2
-            return {
-              ...item,
-              currentStage: 2 as const,
-              updatedAt: now,
-              history: [
-                ...item.history,
-                {
-                  id: generateId(),
-                  action: 'APPROVED_L1' as const,
-                  actor: currentUser.name,
-                  role: currentUser.role,
-                  timestamp: now,
-                  comment,
-                },
-              ],
-            };
-          } else {
-            // Stage 2 → APPROVED + locked
-            return {
-              ...item,
-              status: 'APPROVED' as const,
-              isLocked: true,
-              updatedAt: now,
-              history: [
-                ...item.history,
-                {
-                  id: generateId(),
-                  action: 'APPROVED_L2' as const,
-                  actor: currentUser.name,
-                  role: currentUser.role,
-                  timestamp: now,
-                  comment,
-                },
-              ],
-            };
-          }
+          // Assuming an approval immediately moves it to APPROVED if there are no stages.
+          // Or if there was a L1 and L2, but we removed stages.
+          // We will just set it to APPROVED.
+          return {
+            ...item,
+            status: 'APPROVED' as const,
+            isLocked: true,
+            updatedAt: now,
+            history: [
+              ...item.history,
+              {
+                id: generateId(),
+                action: 'APPROVED' as const,
+                actor: currentUser.name,
+                role: currentUser.role,
+                timestamp: now,
+                comment,
+              },
+            ],
+          };
         })
       );
     },
@@ -253,7 +225,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return {
             ...item,
             status: 'CHANGES_REQUESTED' as const,
-            currentStage: 1 as const,
             isLocked: false,
             updatedAt: now,
             history: [

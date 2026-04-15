@@ -52,7 +52,6 @@ Begin with a thorough assessment of your existing architecture. Identify bounded
 
 The journey to cloud-native is incremental. Start with a strangler-fig pattern to gradually migrate critical components while maintaining operational stability.`,
     status: 'APPROVED',
-    currentStage: 2,
     isLocked: true,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-01T08:00:00Z',
@@ -115,7 +114,6 @@ Large teams with complex data flows, time-travel debugging needs, or heavy middl
 
 For most new projects: start with Context API, upgrade to Zustand when complexity demands it, and reach for Redux Toolkit only when team size and debugging requirements justify the overhead.`,
     status: 'IN_REVIEW',
-    currentStage: 2,
     isLocked: true,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-10T10:00:00Z',
@@ -173,7 +171,6 @@ Test with at least two screen readers: NVDA (Windows) and VoiceOver (macOS/iOS).
 - Error messages programmatically linked to fields
 - Skip navigation links for keyboard users`,
     status: 'IN_REVIEW',
-    currentStage: 1,
     isLocked: true,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-14T09:00:00Z',
@@ -219,7 +216,6 @@ For non-trivial changes, consider a brief synchronous walkthrough before the for
 
 Linters, formatters, and static analysis tools should catch style issues before human reviewers ever see the code. Reserve human attention for higher-order concerns: design decisions, potential edge cases, and knowledge transfer.`,
     status: 'CHANGES_REQUESTED',
-    currentStage: 1,
     isLocked: false,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-08T11:00:00Z',
@@ -274,7 +270,6 @@ Introduced in TypeScript 4.1, template literal types allow string manipulation a
 
 The most important principle in advanced TypeScript is the principle of least astonishment: your types should behave predictably. If a type is difficult to understand or reason about, it's a liability rather than an asset, regardless of its technical sophistication.`,
     status: 'DRAFT',
-    currentStage: 1,
     isLocked: false,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-15T14:00:00Z',
@@ -314,7 +309,6 @@ Don't instrument everything — instrument what matters. Define SLIs (Service Le
 
 Every request entering your system should receive a unique correlation ID that propagates through all downstream calls. This single pattern makes debugging distributed issues dramatically faster.`,
     status: 'DRAFT',
-    currentStage: 1,
     isLocked: false,
     createdBy: 'Alex Morgan',
     createdAt: '2024-10-16T08:00:00Z',

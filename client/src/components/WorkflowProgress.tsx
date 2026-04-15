@@ -18,22 +18,8 @@ export function WorkflowProgress({ item }: Props) {
   const getSteps = (): Step[] => {
     const isRejected = item.status === 'CHANGES_REQUESTED';
     const isDraft = item.status === 'DRAFT';
+    const isInReview = item.status === 'IN_REVIEW';
     const isApproved = item.status === 'APPROVED';
-
-    const step1Status = (): StepStatus => {
-      if (isRejected) return 'rejected';
-      if (isDraft) return 'pending';
-      if (item.currentStage === 1 && item.status === 'IN_REVIEW') return 'active';
-      if (item.currentStage >= 2 || isApproved) return 'completed';
-      return 'pending';
-    };
-
-    const step2Status = (): StepStatus => {
-      if (isRejected || isDraft) return 'pending';
-      if (item.currentStage === 2 && item.status === 'IN_REVIEW') return 'active';
-      if (isApproved) return 'completed';
-      return 'pending';
-    };
 
     return [
       {
@@ -42,14 +28,9 @@ export function WorkflowProgress({ item }: Props) {
         status: isDraft ? 'active' : isRejected ? 'rejected' : 'completed',
       },
       {
-        label: 'Stage 1 Review',
-        sublabel: 'Reviewer L1',
-        status: step1Status(),
-      },
-      {
-        label: 'Stage 2 Review',
-        sublabel: 'Reviewer L2',
-        status: step2Status(),
+        label: 'Review',
+        sublabel: 'Reviewer',
+        status: isInReview ? 'active' : isApproved ? 'completed' : 'pending',
       },
       {
         label: 'Published',

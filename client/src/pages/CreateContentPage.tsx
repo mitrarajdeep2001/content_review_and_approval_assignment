@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Image, Type, AlignLeft, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Image, Type, AlignLeft, Eye, Send } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { clsx } from 'clsx';
@@ -44,7 +44,7 @@ export function CreateContentPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveDraft = async () => {
+  const handleSave = async (submitForReview: boolean) => {
     if (!validate()) {
       toast.error('Please fix the errors before saving.');
       return;
@@ -57,6 +57,10 @@ export function CreateContentPage() {
       formData.append('description', form.description);
       formData.append('body', form.body);
       
+      if (submitForReview) {
+        formData.append('status', 'IN_REVIEW');
+      }
+      
       if (imageFile) {
         formData.append('imageFile', imageFile);
       } else {
@@ -64,10 +68,10 @@ export function CreateContentPage() {
       }
       
       const item = await createContent(formData);
-      toast.success('Draft saved successfully!');
+      toast.success(submitForReview ? 'Content submitted for review!' : 'Draft saved successfully!');
       navigate(`/content/${item.id}`);
     } catch (error) {
-      toast.error('Failed to save draft');
+      toast.error('Failed to save content');
     } finally {
       setIsLoading(false);
     }
@@ -93,18 +97,32 @@ export function CreateContentPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleSaveDraft}
-            disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
-          >
-            {isLoading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Save as Draft
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSave(false)}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save as Draft
+            </button>
+            <button
+              onClick={() => handleSave(true)}
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Submit for Review
+            </button>
+          </div>
         </div>
 
         {/* Tab Toggle */}
@@ -332,18 +350,30 @@ export function CreateContentPage() {
         )}
 
         {/* Bottom save button */}
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end gap-3">
           <button
-            onClick={handleSaveDraft}
+            onClick={() => handleSave(false)}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
+          >
+            {isLoading ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Save as Draft
+          </button>
+          <button
+            onClick={() => handleSave(true)}
             disabled={isLoading}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
           >
             {isLoading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : (
-              <Save className="h-4 w-4" />
+              <Send className="h-4 w-4" />
             )}
-            Save as Draft
+            Submit for Review
           </button>
         </div>
       </div>

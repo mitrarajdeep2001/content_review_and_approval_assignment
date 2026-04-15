@@ -11,13 +11,18 @@ import {
   Award,
 } from 'lucide-react';
 
-const ACTION_CONFIG = {
+const ACTION_CONFIG: Record<string, { icon: any, color: string, bg: string, label: string }> = {
+  DRAFT: { icon: FilePlus, color: 'text-gray-500', bg: 'bg-gray-100', label: 'Drafted' },
+  IN_REVIEW: { icon: Send, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Status: In Review' },
+  APPROVED: { icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Approved' },
+  CHANGES_REQUESTED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Changes Requested' },
   CREATED: { icon: FilePlus, color: 'text-gray-500', bg: 'bg-gray-100', label: 'Created' },
   SUBMITTED: { icon: Send, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Submitted for Review' },
   APPROVED_L1: { icon: CheckCircle2, color: 'text-sky-600', bg: 'bg-sky-100', label: 'Approved (Stage 1)' },
   APPROVED_L2: { icon: Award, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Approved (Stage 2)' },
   REJECTED: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-100', label: 'Changes Requested' },
   EDITED: { icon: Edit2, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Edited' },
+  DEFAULT: { icon: FilePlus, color: 'text-gray-500', bg: 'bg-gray-100', label: 'Update' }
 };
 
 interface Props {
@@ -28,7 +33,7 @@ export function ApprovalTimeline({ history }: Props) {
   return (
     <div className="space-y-0">
       {history.map((entry, idx) => {
-        const config = ACTION_CONFIG[entry.action];
+        const config = ACTION_CONFIG[entry.action] || ACTION_CONFIG.DEFAULT;
         const Icon = config.icon;
         const isLast = idx === history.length - 1;
 

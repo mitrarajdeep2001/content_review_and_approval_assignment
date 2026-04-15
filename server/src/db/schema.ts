@@ -25,7 +25,6 @@ export const contents = pgTable('contents', {
   body: text('body').notNull(),
   image: text('image'),
   status: contentStatusEnum('status').default('DRAFT').notNull(),
-  currentStage: integer('current_stage').default(1).notNull(),
   isLocked: boolean('is_locked').default(false).notNull(),
   createdBy: uuid('created_by').references(() => users.id).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -34,3 +33,15 @@ export const contents = pgTable('contents', {
 
 export type Content = typeof contents.$inferSelect;
 export type NewContent = typeof contents.$inferInsert;
+
+export const approvalLogs = pgTable('approval_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contentId: uuid('content_id').references(() => contents.id, { onDelete: 'cascade' }).notNull(),
+  reviewerId: uuid('reviewer_id').references(() => users.id).notNull(),
+  status: contentStatusEnum('status').notNull(),
+  comment: text('comment'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ApprovalLog = typeof approvalLogs.$inferSelect;
+export type NewApprovalLog = typeof approvalLogs.$inferInsert;

@@ -11,7 +11,7 @@ export type ContentStatus =
 // ─── Approval History Entry ───────────────────────────────────────────────────
 export interface ApprovalHistoryEntry {
   id: string;
-  action: 'SUBMITTED' | 'APPROVED_L1' | 'APPROVED_L2' | 'REJECTED' | 'EDITED' | 'CREATED';
+  action: 'SUBMITTED' | 'APPROVED' | 'APPROVED_L1' | 'APPROVED_L2' | 'REJECTED' | 'EDITED' | 'CREATED';
   actor: string;
   role: Role | 'SYSTEM';
   timestamp: string;
@@ -26,7 +26,6 @@ export interface ContentItem {
   description: string;
   body: string;
   status: ContentStatus;
-  currentStage: 1 | 2;
   isLocked: boolean;
   createdBy: string;
   createdAt: string;

@@ -3,7 +3,6 @@ import { Eye, Edit2, Lock } from 'lucide-react';
 import type { ContentItem } from '../types';
 import type { Role } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { StagePill } from './StagePill';
 import { truncate, formatRelative } from '../utils/helpers';
 import { clsx } from 'clsx';
 
@@ -50,7 +49,6 @@ export function ContentCard({ item, currentRole }: Props) {
           <h3 className="font-semibold text-gray-900 leading-snug text-sm line-clamp-2">
             {item.title}
           </h3>
-          <StagePill stage={item.currentStage} active={item.status === 'IN_REVIEW'} />
         </div>
 
         <p className="text-gray-500 text-xs leading-relaxed mb-3 line-clamp-2">
