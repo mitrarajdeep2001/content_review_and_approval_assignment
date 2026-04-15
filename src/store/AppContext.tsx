@@ -1,0 +1,280 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
+import type { AppContextType, AuthUser, ContentItem, FilterState } from '../types';
+import { getSession, saveSession, clearSession } from '../utils/auth';
+import { INITIAL_CONTENT } from './dummyData';
+import { generateId } from '../utils/helpers';
+import toast from 'react-hot-toast';
+
+const AppContext = createContext<AppContextType | null>(null);
+
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getSession());
+  const [contentList, setContentList] = useState<ContentItem[]>(INITIAL_CONTENT);
+  const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
+
+  // ─── Auth ────────────────────────────────────────────────────────────────────
+  const login = useCallback((user: AuthUser) => {
+    saveSession(user);
+    setCurrentUser(user);
+  }, []);
+
+  const logout = useCallback(() => {
+    clearSession();
+    setCurrentUser(null);
+  }, []);
+
+  // ─── Filters ─────────────────────────────────────────────────────────────────
+  const setFilters = useCallback((partial: Partial<FilterState>) => {
+    setFiltersState((prev) => ({ ...prev, ...partial }));
+  }, []);
+
+  // ─── Create Content ───────────────────────────────────────────────────────────
+  const createContent = useCallback(
+    (data: { title: string; body: string; description: string; image: string }): ContentItem => {
+      if (!currentUser) throw new Error('Not authenticated');
+      const now = new Date().toISOString();
+      const item: ContentItem = {
+        id: generateId(),
+        title: data.title,
+        image: data.image || 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60',
+        description: data.description,
+        body: data.body,
+        status: 'DRAFT',
+        currentStage: 1,
+        isLocked: false,
+        createdBy: currentUser.name,
+        createdAt: now,
+        updatedAt: now,
+        history: [
+          {
+            id: generateId(),
+            action: 'CREATED',
+            actor: currentUser.name,
+            role: currentUser.role,
+            timestamp: now,
+            comment: 'Draft created',
+          },
+        ],
+      };
+      setContentList((prev) => [item, ...prev]);
+      return item;
+    },
+    [currentUser]
+  );
+
+  // ─── Update Content ───────────────────────────────────────────────────────────
+  const updateContent = useCallback(
+    (id: string, data: Partial<Pick<ContentItem, 'title' | 'body' | 'description' | 'image'>>) => {
+      if (!currentUser) return;
+      setContentList((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          if (item.status !== 'CHANGES_REQUESTED') {
+            toast.error('Content can only be edited when changes are requested.');
+            return item;
+          }
+          const now = new Date().toISOString();
+          return {
+            ...item,
+            ...data,
+            updatedAt: now,
+            history: [
+              ...item.history,
+              {
+                id: generateId(),
+                action: 'EDITED' as const,
+                actor: currentUser.name,
+                role: currentUser.role,
+                timestamp: now,
+                comment: 'Content updated after change request',
+              },
+            ],
+          };
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  // ─── Submit Content ───────────────────────────────────────────────────────────
+  const submitContent = useCallback(
+    (id: string) => {
+      if (!currentUser) return;
+      setContentList((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          if (item.status !== 'DRAFT' && item.status !== 'CHANGES_REQUESTED') {
+            toast.error('Only draft or rejected content can be submitted.');
+            return item;
+          }
+          const now = new Date().toISOString();
+          return {
+            ...item,
+            status: 'IN_REVIEW' as const,
+            currentStage: 1 as const,
+            isLocked: true,
+            updatedAt: now,
+            history: [
+              ...item.history,
+              {
+                id: generateId(),
+                action: 'SUBMITTED' as const,
+                actor: currentUser.name,
+                role: currentUser.role,
+                timestamp: now,
+              },
+            ],
+          };
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  // ─── Approve Content ──────────────────────────────────────────────────────────
+  const approveContent = useCallback(
+    (id: string, comment?: string) => {
+      if (!currentUser) return;
+      setContentList((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+
+          // Validate reviewer role vs stage
+          if (currentUser.role === 'REVIEWER_L1' && item.currentStage !== 1) {
+            toast.error('You can only approve Stage 1 content.');
+            return item;
+          }
+          if (currentUser.role === 'REVIEWER_L2' && item.currentStage !== 2) {
+            toast.error('You can only approve Stage 2 content.');
+            return item;
+          }
+          if (item.status !== 'IN_REVIEW') {
+            toast.error('Content must be in review to approve.');
+            return item;
+          }
+
+          const now = new Date().toISOString();
+
+          if (item.currentStage === 1) {
+            // Stage 1 → Stage 2
+            return {
+              ...item,
+              currentStage: 2 as const,
+              updatedAt: now,
+              history: [
+                ...item.history,
+                {
+                  id: generateId(),
+                  action: 'APPROVED_L1' as const,
+                  actor: currentUser.name,
+                  role: currentUser.role,
+                  timestamp: now,
+                  comment,
+                },
+              ],
+            };
+          } else {
+            // Stage 2 → APPROVED + locked
+            return {
+              ...item,
+              status: 'APPROVED' as const,
+              isLocked: true,
+              updatedAt: now,
+              history: [
+                ...item.history,
+                {
+                  id: generateId(),
+                  action: 'APPROVED_L2' as const,
+                  actor: currentUser.name,
+                  role: currentUser.role,
+                  timestamp: now,
+                  comment,
+                },
+              ],
+            };
+          }
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  // ─── Reject Content ───────────────────────────────────────────────────────────
+  const rejectContent = useCallback(
+    (id: string, comment?: string) => {
+      if (!currentUser) return;
+      setContentList((prev) =>
+        prev.map((item) => {
+          if (item.id !== id) return item;
+          if (item.status !== 'IN_REVIEW') {
+            toast.error('Content must be in review to reject.');
+            return item;
+          }
+          const now = new Date().toISOString();
+          return {
+            ...item,
+            status: 'CHANGES_REQUESTED' as const,
+            currentStage: 1 as const,
+            isLocked: false,
+            updatedAt: now,
+            history: [
+              ...item.history,
+              {
+                id: generateId(),
+                action: 'REJECTED' as const,
+                actor: currentUser.name,
+                role: currentUser.role,
+                timestamp: now,
+                comment,
+              },
+            ],
+          };
+        })
+      );
+    },
+    [currentUser]
+  );
+
+  const value = useMemo<AppContextType>(
+    () => ({
+      currentUser,
+      login,
+      logout,
+      contentList,
+      createContent,
+      updateContent,
+      submitContent,
+      approveContent,
+      rejectContent,
+      filters,
+      setFilters,
+    }),
+    [
+      currentUser,
+      login,
+      logout,
+      contentList,
+      createContent,
+      updateContent,
+      submitContent,
+      approveContent,
+      rejectContent,
+      filters,
+      setFilters,
+    ]
+  );
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useApp(): AppContextType {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used inside AppProvider');
+  return ctx;
+}

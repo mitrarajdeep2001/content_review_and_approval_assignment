@@ -1,12 +1,3 @@
-import { Hono } from 'hono'
-import { renderer } from './renderer'
-
-const app = new Hono()
-
-app.use(renderer)
-
-app.get('/', (c) => {
-  return c.render(<h1>Hello!</h1>)
-})
-
-export default app
+// This file is intentionally empty.
+// The React app entry point is src/main.tsx
+export {};
