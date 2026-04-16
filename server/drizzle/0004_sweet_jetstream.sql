@@ -1,0 +1,1 @@
+ALTER TABLE "contents" ADD COLUMN "current_review_stage" integer;

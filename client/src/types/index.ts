@@ -27,6 +27,7 @@ export interface ContentItem {
   body: string;
   status: ContentStatus;
   isLocked: boolean;
+  currentReviewStage?: 1 | 2 | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

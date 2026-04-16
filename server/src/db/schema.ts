@@ -26,6 +26,7 @@ export const contents = pgTable('contents', {
   image: text('image'),
   status: contentStatusEnum('status').default('DRAFT').notNull(),
   isLocked: boolean('is_locked').default(false).notNull(),
+  currentReviewStage: integer('current_review_stage'),
   createdBy: uuid('created_by').references(() => users.id).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -59,10 +59,11 @@ export function ContentDetailPage() {
 
   const canSubmit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
   const canEdit = currentUser.role === 'CREATOR' && item.status === 'CHANGES_REQUESTED';
-  const canApprove = (currentUser.role === 'REVIEWER_L1' || currentUser.role === 'REVIEWER_L2') && item.status === 'IN_REVIEW';
-  const canReject =
-    (currentUser.role === 'REVIEWER_L1' || currentUser.role === 'REVIEWER_L2') &&
-    item.status === 'IN_REVIEW';
+  const canApprove =
+    item.status === 'IN_REVIEW' &&
+    ((item.currentReviewStage === 1 && currentUser.role === 'REVIEWER_L1') ||
+      (item.currentReviewStage === 2 && currentUser.role === 'REVIEWER_L2'));
+  const canReject = canApprove;
 
   const simulateLoading = async (fn: () => void) => {
     setIsLoading(true);
@@ -142,6 +143,11 @@ export function ContentDetailPage() {
                 </h1>
                 <div className="flex items-center gap-2">
                   <StatusBadge status={item.status} />
+                  {item.status === 'IN_REVIEW' && item.currentReviewStage && (
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200 uppercase tracking-wide">
+                      Stage {item.currentReviewStage} Review
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -281,7 +287,14 @@ export function ContentDetailPage() {
                   </button>
 
                   {/* Helper text */}
-                  {!canSubmit && !canEdit && !canApprove && !canReject && (
+                  {item.status === 'IN_REVIEW' && !canApprove && (
+                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2.5 text-center mt-3 border border-amber-100 italic">
+                      {item.currentReviewStage === 1
+                        ? "Currently awaiting L1 Reviewer approval."
+                        : "Currently awaiting L2 Reviewer approval."}
+                    </p>
+                  )}
+                  {!canSubmit && !canEdit && !canApprove && !canReject && item.status !== 'IN_REVIEW' && (
                     <p className="text-xs text-gray-400 text-center pt-1">
                       No actions available for your role at this stage.
                     </p>

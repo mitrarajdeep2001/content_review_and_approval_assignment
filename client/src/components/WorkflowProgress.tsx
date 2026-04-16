@@ -28,9 +28,14 @@ export function WorkflowProgress({ item }: Props) {
         status: isDraft ? 'active' : isRejected ? 'rejected' : 'completed',
       },
       {
-        label: 'Review',
-        sublabel: 'Reviewer',
-        status: isInReview ? 'active' : isApproved ? 'completed' : 'pending',
+        label: 'L1 Review',
+        sublabel: 'Reviewer L1',
+        status: isInReview && item.currentReviewStage === 1 ? 'active' : ((isInReview && item.currentReviewStage === 2) || isApproved) ? 'completed' : 'pending',
+      },
+      {
+        label: 'L2 Review',
+        sublabel: 'Reviewer L2',
+        status: isInReview && item.currentReviewStage === 2 ? 'active' : isApproved ? 'completed' : 'pending',
       },
       {
         label: 'Published',

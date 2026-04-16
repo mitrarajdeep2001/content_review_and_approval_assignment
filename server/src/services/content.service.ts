@@ -30,7 +30,11 @@ export const contentService = {
   },
   
   async createContent(data: NewContent, userId: string) {
-    const [inserted] = await db.insert(contents).values(data).returning();
+    const finalData = {
+      ...data,
+      currentReviewStage: data.status === 'IN_REVIEW' ? 1 : null
+    };
+    const [inserted] = await db.insert(contents).values(finalData).returning();
     
     await db.insert(approvalLogs).values({
       contentId: inserted.id,

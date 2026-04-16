@@ -150,6 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return {
             ...item,
             status: 'IN_REVIEW' as const,
+            currentReviewStage: 1,
             isLocked: true,
             updatedAt: now,
             history: [
@@ -182,21 +183,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return item;
           }
 
-          const now = new Date().toISOString();
+          // Role and Stage Checks
+          if (item.currentReviewStage === 1 && currentUser.role !== 'REVIEWER_L1') {
+            toast.error('Only L1 Reviewers can approve stage 1 content.');
+            return item;
+          }
+          if (item.currentReviewStage === 2 && currentUser.role !== 'REVIEWER_L2') {
+            toast.error('Only L2 Reviewers can approve stage 2 content.');
+            return item;
+          }
 
-          // Assuming an approval immediately moves it to APPROVED if there are no stages.
-          // Or if there was a L1 and L2, but we removed stages.
-          // We will just set it to APPROVED.
+          const now = new Date().toISOString();
+          const nextStage = item.currentReviewStage === 1 ? 2 : null;
+          const nextStatus = nextStage === null ? ('APPROVED' as const) : ('IN_REVIEW' as const);
+          const action = nextStage === 2 ? 'APPROVED_L1' : 'APPROVED';
+
           return {
             ...item,
-            status: 'APPROVED' as const,
+            status: nextStatus,
+            currentReviewStage: nextStage,
             isLocked: true,
             updatedAt: now,
             history: [
               ...item.history,
               {
                 id: generateId(),
-                action: 'APPROVED' as const,
+                action: action as any,
                 actor: currentUser.name,
                 role: currentUser.role,
                 timestamp: now,
@@ -225,6 +237,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return {
             ...item,
             status: 'CHANGES_REQUESTED' as const,
+            currentReviewStage: null,
             isLocked: false,
             updatedAt: now,
             history: [

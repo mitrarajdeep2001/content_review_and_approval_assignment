@@ -88,8 +88,8 @@ DRAFT → IN_REVIEW (Stage 1) → IN_REVIEW (Stage 2) → APPROVED
 
 ## Rules
 
-* Content starts as `DRAFT`
-* Submission moves content to **Stage 1**
+* Content starts as `DRAFT` or `IN_REVIEW`
+* Submission in `IN_REVIEW` moves content to **Stage 1**
 * Each stage requires approval by correct reviewer
 * Rejection:
 
@@ -224,7 +224,7 @@ DRAFT → IN_REVIEW (Stage 1) → IN_REVIEW (Stage 2) → APPROVED
 * description
 * image
 * status
-* current_stage
+* current_review_stage
 * is_locked
 * created_by
 * created_at

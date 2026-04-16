@@ -38,8 +38,13 @@ export function ContentCard({ item, currentRole }: Props) {
           </div>
         )}
         {/* Status overlay */}
-        <div className="absolute bottom-2 left-2">
+        <div className="absolute bottom-2 left-2 flex flex-col gap-1 items-start">
           <StatusBadge status={item.status} size="sm" />
+          {item.status === 'IN_REVIEW' && item.currentReviewStage && (
+            <span className="rounded-md bg-white/90 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-bold text-gray-700 border border-gray-200 uppercase tracking-tight">
+              Stage {item.currentReviewStage}
+            </span>
+          )}
         </div>
       </div>
 
