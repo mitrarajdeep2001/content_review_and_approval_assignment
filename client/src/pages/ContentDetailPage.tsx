@@ -135,7 +135,7 @@ export function ContentDetailPage() {
                     'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60';
                 }}
               />
-              {item.isLocked && (
+              {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm font-medium text-gray-700">
                     <Lock className="h-4 w-4" />

@@ -13,7 +13,7 @@ interface Props {
 
 export function ContentCard({ item, currentRole }: Props) {
   const canEdit =
-    currentRole === 'CREATOR' && item.status === 'CHANGES_REQUESTED';
+    currentRole === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
 
   return (
     <article className="group bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
@@ -29,7 +29,7 @@ export function ContentCard({ item, currentRole }: Props) {
           }}
         />
         {/* Lock overlay */}
-        {item.isLocked && (
+        {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && (
           <div className="absolute top-2 right-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-gray-600 shadow-sm border border-gray-200">
               <Lock className="h-3 w-3" />

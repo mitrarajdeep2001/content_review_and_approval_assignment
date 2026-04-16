@@ -26,6 +26,7 @@ export function ContentListPage() {
   // Stats
   const stats = useMemo(() => ({
     total: contentList.length,
+    drafts: contentList.filter((c) => c.status === 'DRAFT').length,
     inReview: contentList.filter((c) => c.status === 'IN_REVIEW').length,
     approved: contentList.filter((c) => c.status === 'APPROVED').length,
     needsAction: contentList.filter((c) => c.status === 'CHANGES_REQUESTED').length,
@@ -57,12 +58,13 @@ export function ContentListPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
           {[
-            { label: 'Total Content', value: stats.total, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Total Content', value: stats.total, icon: TrendingUp, color: 'text-gray-600', bg: 'bg-gray-100' },
+            { label: 'Drafts', value: stats.drafts, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'In Review', value: stats.inReview, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
             { label: 'Approved', value: stats.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Needs Revision', value: stats.needsAction, icon: TrendingUp, color: 'text-red-600', bg: 'bg-red-50' },
+            { label: 'Needs Revision', value: stats.needsAction, icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
