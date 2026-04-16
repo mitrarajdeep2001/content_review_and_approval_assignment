@@ -65,3 +65,62 @@ export const createContent = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const updateContent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userCookie = req.cookies.cf_user_session;
+    if (!userCookie) return res.status(401).json({ message: 'Not authenticated' });
+    const user = JSON.parse(userCookie);
+
+    const all = await contentService.fetchAllContents();
+    const item = all.find(c => c.id === id);
+    
+    if (!item) return res.status(404).json({ message: 'Content not found' });
+    if (item.status === 'IN_REVIEW' || item.status === 'APPROVED') {
+      return res.status(403).json({ message: 'Content is locked and cannot be edited' });
+    }
+
+    const { title, description, body } = req.body;
+    let image = req.body.image;
+
+    if (req.file) {
+      const host = req.protocol + '://' + req.get('host');
+      image = `${host}/uploads/${req.file.filename}`;
+    }
+
+    const updated = await contentService.updateContent(id, { 
+      title, 
+      description, 
+      body, 
+      image: image !== undefined ? image : item.image 
+    });
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error('updateContent error', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteContent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userCookie = req.cookies.cf_user_session;
+    if (!userCookie) return res.status(401).json({ message: 'Not authenticated' });
+    const user = JSON.parse(userCookie);
+
+    const all = await contentService.fetchAllContents();
+    const item = all.find(c => c.id === id);
+    
+    if (!item) return res.status(404).json({ message: 'Content not found' });
+    if (item.status === 'IN_REVIEW' || item.status === 'APPROVED') {
+      return res.status(403).json({ message: 'Content is locked and cannot be deleted' });
+    }
+
+    await contentService.deleteContent(id);
+    res.status(200).json({ message: 'Content deleted successfully' });
+  } catch (error) {
+    console.error('deleteContent error', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

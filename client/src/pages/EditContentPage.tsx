@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Save, AlertTriangle, Image as ImageIcon, Type, AlignLeft } from 'lucide-react';
+
+const PLACEHOLDER_IMAGES = [
+  'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop&q=60',
+];
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { StatusBadge } from '../components/StatusBadge';
@@ -21,6 +29,8 @@ export function EditContentPage() {
     body: '',
     image: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [customImageUrl, setCustomImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
@@ -33,6 +43,10 @@ export function EditContentPage() {
         body: item.body,
         image: item.image,
       });
+      // If it's not a placeholder, set it as customImageUrl
+      if (item.image && !PLACEHOLDER_IMAGES.includes(item.image)) {
+        setCustomImageUrl(item.image);
+      }
     }
   }, [item]);
 
@@ -52,7 +66,9 @@ export function EditContentPage() {
     );
   }
 
-  if (item.status !== 'CHANGES_REQUESTED') {
+  const isEditable = item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED';
+
+  if (!isEditable) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md shadow-sm text-center">
@@ -61,8 +77,7 @@ export function EditContentPage() {
           </div>
           <h2 className="text-lg font-semibold text-gray-800 mb-2">Cannot Edit Content</h2>
           <p className="text-sm text-gray-500 mb-2">
-            Content can only be edited when its status is{' '}
-            <strong className="text-gray-700">Changes Requested</strong>.
+            Content can only be edited when it is a <strong className="text-gray-700">Draft</strong> or has <strong className="text-gray-700">Changes Requested</strong>.
           </p>
           <p className="text-sm text-gray-400 mb-5">
             Current status:{' '}
@@ -103,16 +118,26 @@ export function EditContentPage() {
       return;
     }
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    updateContent(item.id, {
-      title: form.title,
-      description: form.description,
-      body: form.body,
-      image: form.image,
-    });
-    toast.success('Content updated! You can now resubmit for review.');
-    navigate(`/content/${item.id}`);
-    setIsLoading(false);
+    try {
+      const formData = new FormData();
+      formData.append('title', form.title);
+      formData.append('description', form.description);
+      formData.append('body', form.body);
+      
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      } else {
+        formData.append('image', customImageUrl || form.image || '');
+      }
+
+      await updateContent(item.id, formData);
+      toast.success('Content updated! You can now resubmit for review.');
+      navigate(`/content/${item.id}`);
+    } catch (error) {
+      toast.error('Failed to update content');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -169,28 +194,122 @@ export function EditContentPage() {
         )}
 
         <div className="space-y-5">
-          {/* Cover image URL */}
+          {/* Image Selection */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <label className="block text-sm font-semibold text-gray-800 mb-3">Cover Image URL</label>
-            <div className="flex gap-3">
-              <div className="h-16 w-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                <img
-                  src={form.image}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60';
-                  }}
-                />
-              </div>
-              <input
-                type="url"
-                value={form.image}
-                onChange={(e) => updateField('image', e.target.value)}
-                placeholder="https://..."
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-4">
+              <ImageIcon className="h-4 w-4 text-gray-400" />
+              Cover Image
+            </label>
+
+            {/* Preview */}
+            <div className="relative h-44 rounded-xl overflow-hidden bg-gray-100 mb-4 group">
+              <img
+                src={imageFile ? URL.createObjectURL(imageFile) : (customImageUrl || form.image)}
+                alt="Cover preview"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGES[0];
+                }}
               />
+              {(!form.image && !customImageUrl && !imageFile) && (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium">
+                  No image selected
+                </div>
+              )}
+            </div>
+
+            {/* Preset images */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {PLACEHOLDER_IMAGES.map((url) => (
+                <button
+                  key={url}
+                  onClick={() => {
+                      setForm((p) => ({ ...p, image: url }));
+                      setCustomImageUrl('');
+                      setImageFile(null);
+                      setIsDirty(true);
+                  }}
+                  className={clsx(
+                    'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0',
+                    form.image === url && !customImageUrl && !imageFile
+                      ? 'border-blue-500 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300'
+                  )}
+                >
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setForm(p => ({ ...p, image: '' }));
+                  setCustomImageUrl('');
+                  setImageFile(null);
+                  setIsDirty(true);
+                }}
+                className={clsx(
+                  'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all flex-shrink-0',
+                  !form.image && !customImageUrl && !imageFile
+                    ? 'border-blue-500 text-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:text-gray-500'
+                )}
+              >
+                None
+              </button>
+            </div>
+
+            {/* Custom Image Upload & URL */}
+            <div className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-gray-500 ml-1">Upload from computer</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setImageFile(e.target.files[0]);
+                      setCustomImageUrl('');
+                      setForm(p => ({ ...p, image: '' }));
+                      setIsDirty(true);
+                    }
+                  }}
+                  className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all"
+                />
+                {imageFile && (
+                  <p className="text-[10px] text-blue-600 font-medium ml-1 flex items-center gap-1">
+                    <Save className="h-2.5 w-2.5" /> File selected: {imageFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-gray-100"></div>
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                  <span className="bg-white px-2 text-gray-300">OR</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-gray-500 ml-1">Paste image URL</span>
+                <input
+                  type="url"
+                  value={customImageUrl}
+                  onChange={(e) => {
+                    setCustomImageUrl(e.target.value);
+                    setForm((p) => ({ ...p, image: '' }));
+                    setImageFile(null);
+                    setIsDirty(true);
+                  }}
+                  placeholder="https://..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                {customImageUrl && (
+                  <p className="text-[10px] text-emerald-600 font-medium ml-1 flex items-center gap-1">
+                    <Save className="h-2.5 w-2.5" /> Using custom URL
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

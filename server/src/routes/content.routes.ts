@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { getContents, createContent } from '../controllers/content.controller.js';
+import { getContents, createContent, updateContent, deleteContent } from '../controllers/content.controller.js';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -23,5 +23,7 @@ const router = Router();
 
 router.get('/', getContents);
 router.post('/', upload.single('imageFile'), createContent);
+router.put('/:id', upload.single('imageFile'), updateContent);
+router.delete('/:id', deleteContent);
 
 export default router;

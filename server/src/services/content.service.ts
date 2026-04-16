@@ -44,5 +44,17 @@ export const contentService = {
     });
     
     return inserted;
+  },
+
+  async updateContent(id: string, data: Partial<NewContent>) {
+    const [updated] = await db.update(contents)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(contents.id, id))
+      .returning();
+    return updated;
+  },
+
+  async deleteContent(id: string) {
+    await db.delete(contents).where(eq(contents.id, id));
   }
 };

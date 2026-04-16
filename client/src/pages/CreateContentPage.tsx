@@ -184,32 +184,72 @@ export function CreateContentPage() {
                     <img src={url} alt="" className="h-full w-full object-cover" />
                   </button>
                 ))}
+                <button
+                  onClick={() => {
+                    setForm(p => ({ ...p, image: '', customImage: '' }));
+                    setImageFile(null);
+                  }}
+                  className={clsx(
+                    'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all flex-shrink-0',
+                    !form.image && !form.customImage && !imageFile
+                      ? 'border-blue-500 text-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:text-gray-500'
+                  )}
+                >
+                  None
+                </button>
               </div>
 
               {/* Custom Image Upload */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setImageFile(e.target.files[0]);
-                    setForm(p => ({ ...p, customImage: '', image: URL.createObjectURL(e.target.files![0]) }));
-                  }
-                }}
-                className="w-full mb-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:outline-none"
-              />
+              <div className="space-y-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-gray-500 ml-1">Upload from computer</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImageFile(e.target.files[0]);
+                        setForm(p => ({ ...p, customImage: '', image: URL.createObjectURL(e.target.files![0]) }));
+                      }
+                    }}
+                    className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-all"
+                  />
+                  {imageFile && (
+                    <p className="text-[10px] text-blue-600 font-medium ml-1 flex items-center gap-1">
+                      <Save className="h-2.5 w-2.5" /> File selected: {imageFile.name}
+                    </p>
+                  )}
+                </div>
 
-              {/* Custom URL */}
-              <input
-                type="url"
-                value={form.customImage}
-                onChange={(e) => {
-                    setForm((p) => ({ ...p, customImage: e.target.value }));
-                    setImageFile(null);
-                }}
-                placeholder="Or paste a custom image URL..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              />
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t border-gray-100"></div>
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
+                    <span className="bg-white px-2 text-gray-300">OR</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-gray-500 ml-1">Paste image URL</span>
+                  <input
+                    type="url"
+                    value={form.customImage}
+                    onChange={(e) => {
+                      setForm((p) => ({ ...p, customImage: e.target.value, image: e.target.value }));
+                      setImageFile(null);
+                    }}
+                    placeholder="https://..."
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                  {form.customImage && (
+                    <p className="text-[10px] text-emerald-600 font-medium ml-1 flex items-center gap-1">
+                      <ArrowLeft className="h-2.5 w-2.5 rotate-180" /> Using custom URL
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Title */}

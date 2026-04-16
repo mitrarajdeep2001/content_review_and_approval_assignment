@@ -10,9 +10,11 @@ interface Props {
   cancelLabel?: string;
   variant?: 'danger' | 'success';
   requireComment?: boolean;
+  showComment?: boolean;
   commentPlaceholder?: string;
   onConfirm: (comment?: string) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -23,9 +25,11 @@ export function ConfirmModal({
   cancelLabel = 'Cancel',
   variant = 'danger',
   requireComment = false,
+  showComment = true,
   commentPlaceholder = 'Add a comment (optional)...',
   onConfirm,
   onCancel,
+  isLoading = false,
 }: Props) {
   const [comment, setComment] = useState('');
 
@@ -86,14 +90,15 @@ export function ConfirmModal({
           <h3 className="text-center text-lg font-semibold text-gray-900 mb-1">{title}</h3>
           <p className="text-center text-sm text-gray-500 mb-5">{description}</p>
 
-          {/* Comment textarea */}
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder={commentPlaceholder}
-            rows={3}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none mb-4"
-          />
+          {showComment && (
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder={commentPlaceholder}
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none mb-4"
+            />
+          )}
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -105,15 +110,19 @@ export function ConfirmModal({
             </button>
             <button
               onClick={() => onConfirm(comment || undefined)}
-              disabled={requireComment && !comment.trim()}
+              disabled={(requireComment && !comment.trim()) || isLoading}
               className={clsx(
-                'flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                'flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                 isSuccess
                   ? 'bg-emerald-600 hover:bg-emerald-700'
                   : 'bg-red-600 hover:bg-red-700'
               )}
             >
-              {confirmLabel}
+              {isLoading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              ) : (
+                confirmLabel
+              )}
             </button>
           </div>
         </div>

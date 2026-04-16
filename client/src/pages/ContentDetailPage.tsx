@@ -11,6 +11,7 @@ import {
   Calendar,
   User,
   BookOpen,
+  Trash2,
 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
@@ -22,12 +23,12 @@ import { formatDate } from '../utils/helpers';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
-type ModalType = 'approve' | 'reject' | 'submit' | null;
+type ModalType = 'approve' | 'reject' | 'submit' | 'delete' | null;
 
 export function ContentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const currentUser = useRequireAuth();
-  const { contentList, submitContent, approveContent, rejectContent } = useApp();
+  const { contentList, submitContent, approveContent, rejectContent, deleteContent } = useApp();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,17 +59,18 @@ export function ContentDetailPage() {
   }
 
   const canSubmit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
-  const canEdit = currentUser.role === 'CREATOR' && item.status === 'CHANGES_REQUESTED';
+  const canEdit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+  const canDelete = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
   const canApprove =
     item.status === 'IN_REVIEW' &&
     ((item.currentReviewStage === 1 && currentUser.role === 'REVIEWER_L1') ||
       (item.currentReviewStage === 2 && currentUser.role === 'REVIEWER_L2'));
   const canReject = canApprove;
 
-  const simulateLoading = async (fn: () => void) => {
+  const simulateLoading = async (fn: () => void | Promise<void>) => {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    fn();
+    await fn();
     setIsLoading(false);
   };
 
@@ -93,6 +95,14 @@ export function ContentDetailPage() {
     await simulateLoading(() => {
       rejectContent(item.id, comment);
       toast.error('Changes requested. Content returned to creator.');
+    });
+    setActiveModal(null);
+  };
+  
+  const handleDelete = async () => {
+    await simulateLoading(async () => {
+      await deleteContent(item.id);
+      navigate('/');
     });
     setActiveModal(null);
   };
@@ -256,6 +266,18 @@ export function ContentDetailPage() {
                     </Link>
                   )}
 
+                  {/* Delete */}
+                  {canDelete && (
+                    <button
+                      onClick={() => setActiveModal('delete')}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Content
+                    </button>
+                  )}
+
                   {/* Approve */}
                   <button
                     onClick={() => setActiveModal('approve')}
@@ -319,6 +341,7 @@ export function ContentDetailPage() {
         description="Are you sure you want to submit this content for review? It will be locked for editing until a reviewer responds."
         confirmLabel="Submit"
         variant="success"
+        isLoading={isLoading}
         onConfirm={handleSubmit}
         onCancel={() => setActiveModal(null)}
       />
@@ -329,6 +352,7 @@ export function ContentDetailPage() {
         confirmLabel="Publish"
         variant="success"
         commentPlaceholder="Add a review comment (optional)..."
+        isLoading={isLoading}
         onConfirm={handleApprove}
         onCancel={() => setActiveModal(null)}
       />
@@ -340,7 +364,19 @@ export function ContentDetailPage() {
         variant="danger"
         requireComment={true}
         commentPlaceholder="Describe the changes needed (required)..."
+        isLoading={isLoading}
         onConfirm={handleReject}
+        onCancel={() => setActiveModal(null)}
+      />
+      <ConfirmModal
+        isOpen={activeModal === 'delete'}
+        title="Delete Content"
+        description="Are you sure you want to delete this content? This action is permanent and cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        showComment={false}
+        isLoading={isLoading}
+        onConfirm={handleDelete}
         onCancel={() => setActiveModal(null)}
       />
     </div>

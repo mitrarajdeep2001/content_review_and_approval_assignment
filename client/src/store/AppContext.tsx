@@ -103,36 +103,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ─── Update Content ───────────────────────────────────────────────────────────
   const updateContent = useCallback(
-    (id: string, data: Partial<Pick<ContentItem, 'title' | 'body' | 'description' | 'image'>>) => {
+    async (id: string, formData: FormData) => {
       if (!currentUser) return;
-      setContentList((prev) =>
-        prev.map((item) => {
-          if (item.id !== id) return item;
-          if (item.status !== 'CHANGES_REQUESTED') {
-            toast.error('Content can only be edited when changes are requested.');
-            return item;
+      
+      const item = contentList.find(c => c.id === id);
+      if (item && item.status !== 'DRAFT' && item.status !== 'CHANGES_REQUESTED') {
+        toast.error('Content can only be edited when it is a draft or changes are requested.');
+        return;
+      }
+
+      try {
+        const response = await api.put(`/content/${id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
           }
-          const now = new Date().toISOString();
-          return {
-            ...item,
-            ...data,
-            updatedAt: now,
-            history: [
-              ...item.history,
-              {
-                id: generateId(),
-                action: 'EDITED' as const,
-                actor: currentUser.name,
-                role: currentUser.role,
-                timestamp: now,
-                comment: 'Content updated after change request',
-              },
-            ],
-          };
-        })
-      );
+        });
+        const updatedItem = response.data;
+        
+        setContentList((prev) =>
+          prev.map((item) => {
+            if (item.id !== id) return item;
+            return {
+              ...item,
+              ...updatedItem,
+              // history is managed separately or we'd need to fetch it
+            };
+          })
+        );
+      } catch (error) {
+        toast.error('Failed to update content');
+        throw error;
+      }
     },
-    [currentUser]
+    [currentUser, contentList]
+  );
+
+  const deleteContent = useCallback(
+    async (id: string) => {
+      if (!currentUser) return;
+      
+      const item = contentList.find(c => c.id === id);
+      if (item && item.status === 'IN_REVIEW' || item?.status === 'APPROVED') {
+        toast.error('Locked content cannot be deleted.');
+        return;
+      }
+
+      try {
+        await api.delete(`/content/${id}`);
+        setContentList((prev) => prev.filter((item) => item.id !== id));
+        toast.success('Content deleted');
+      } catch (error) {
+        toast.error('Failed to delete content');
+        throw error;
+      }
+    },
+    [currentUser, contentList]
   );
 
   // ─── Submit Content ───────────────────────────────────────────────────────────
@@ -266,6 +291,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       contentList,
       createContent,
       updateContent,
+      deleteContent,
       submitContent,
       approveContent,
       rejectContent,
@@ -279,6 +305,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       contentList,
       createContent,
       updateContent,
+      deleteContent,
       submitContent,
       approveContent,
       rejectContent,

@@ -59,7 +59,8 @@ export interface AppContextType {
   // Content
   contentList: ContentItem[];
   createContent: (formData: FormData) => Promise<ContentItem>;
-  updateContent: (id: string, data: Partial<Pick<ContentItem, 'title' | 'body' | 'description' | 'image'>>) => void;
+  updateContent: (id: string, formData: FormData) => Promise<void>;
+  deleteContent: (id: string) => Promise<void>;
   submitContent: (id: string) => void;
   approveContent: (id: string, comment?: string) => void;
   rejectContent: (id: string, comment?: string) => void;
