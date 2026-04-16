@@ -57,6 +57,17 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+  }
 }
 
 @keyframes animateIn {

@@ -27,7 +27,7 @@ export function CreateContentPage() {
     customImage: '',
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'draft' | 'submit' | null>(null);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -49,7 +49,7 @@ export function CreateContentPage() {
       toast.error('Please fix the errors before saving.');
       return;
     }
-    setIsLoading(true);
+    setPendingAction(submitForReview ? 'submit' : 'draft');
     
     try {
       const formData = new FormData();
@@ -73,7 +73,7 @@ export function CreateContentPage() {
     } catch (error) {
       toast.error('Failed to save content');
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
     }
   };
 
@@ -100,10 +100,10 @@ export function CreateContentPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleSave(false)}
-              disabled={isLoading}
+              disabled={!!pendingAction}
               className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
             >
-              {isLoading ? (
+              {pendingAction === 'draft' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
               ) : (
                 <Save className="h-4 w-4" />
@@ -112,10 +112,10 @@ export function CreateContentPage() {
             </button>
             <button
               onClick={() => handleSave(true)}
-              disabled={isLoading}
+              disabled={!!pendingAction}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
             >
-              {isLoading ? (
+              {pendingAction === 'submit' ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               ) : (
                 <Send className="h-4 w-4" />
@@ -393,10 +393,10 @@ export function CreateContentPage() {
         <div className="mt-6 flex justify-end gap-3">
           <button
             onClick={() => handleSave(false)}
-            disabled={isLoading}
+            disabled={!!pendingAction}
             className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
           >
-            {isLoading ? (
+            {pendingAction === 'draft' ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-gray-700" />
             ) : (
               <Save className="h-4 w-4" />
@@ -405,10 +405,10 @@ export function CreateContentPage() {
           </button>
           <button
             onClick={() => handleSave(true)}
-            disabled={isLoading}
+            disabled={!!pendingAction}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
           >
-            {isLoading ? (
+            {pendingAction === 'submit' ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             ) : (
               <Send className="h-4 w-4" />

@@ -26,13 +26,13 @@ type ModalType = 'approve' | 'reject' | null;
 export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props) {
   const { approveContent, rejectContent } = useApp();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'approve' | 'reject' | null>(null);
 
   const stage = item.currentReviewStage;
   const isStage1 = stage === 1;
 
   const handleApprove = async (comment?: string) => {
-    setIsLoading(true);
+    setPendingAction('approve');
     try {
       await approveContent(item.id, comment);
       const msg =
@@ -43,20 +43,20 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
     } catch (error) {
       // Error is handled in context/toast
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
       setActiveModal(null);
     }
   };
 
   const handleReject = async (comment?: string) => {
-    setIsLoading(true);
+    setPendingAction('reject');
     try {
       await rejectContent(item.id, comment);
       toast.error('Changes requested. Returned to creator.');
     } catch (error) {
       // Error is handled in context/toast
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
       setActiveModal(null);
     }
   };
@@ -161,14 +161,14 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
               <button
                 id={`approve-${item.id}`}
                 onClick={() => setActiveModal('approve')}
-                disabled={isLoading}
+                disabled={!!pendingAction}
                 className={clsx(
                   'flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition-all',
                   'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
                 title="Approve (A)"
               >
-                {isLoading ? (
+                {pendingAction === 'approve' ? (
                   <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 ) : (
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -180,14 +180,14 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
               <button
                 id={`reject-${item.id}`}
                 onClick={() => setActiveModal('reject')}
-                disabled={isLoading}
+                disabled={!!pendingAction}
                 className={clsx(
                   'flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition-all',
                   'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
                 title="Reject (R)"
               >
-                {isLoading ? (
+                {pendingAction === 'reject' ? (
                   <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-300 border-t-red-600" />
                 ) : (
                   <XCircle className="h-3.5 w-3.5" />
@@ -218,7 +218,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
         </div>
 
         {/* Loading overlay */}
-        {isLoading && (
+        {!!pendingAction && (
           <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center rounded-2xl">
             <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600/30 border-t-blue-600" />
@@ -244,7 +244,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
         confirmLabel={currentRole === 'REVIEWER_L1' ? 'Approve' : 'Publish'}
         variant="success"
         commentPlaceholder="Add a review comment (optional)..."
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleApprove}
         onCancel={() => setActiveModal(null)}
       />
@@ -258,7 +258,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
         variant="danger"
         requireComment={true}
         commentPlaceholder="Describe the changes needed (required)..."
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleReject}
         onCancel={() => setActiveModal(null)}
       />

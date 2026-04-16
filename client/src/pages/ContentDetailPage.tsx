@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,6 +12,8 @@ import {
   User,
   BookOpen,
   Trash2,
+  ChevronUp,
+  Clock,
 } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
@@ -31,9 +33,31 @@ export function ContentDetailPage() {
   const { contentList, submitContent, approveContent, rejectContent, deleteContent } = useApp();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'submit' | 'approve' | 'reject' | 'delete' | null>(null);
 
   const item = contentList.find((c) => c.id === id);
+
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Calculate reading time
+  const readingTime = useMemo(() => {
+    if (!item?.body) return 0;
+    const words = item.body.trim().split(/\s+/).length;
+    return Math.ceil(words / 200); // Average 200 wpm
+  }, [item?.body]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (window.scrollY / totalScroll) * 100;
+      setScrollProgress(progress);
+      setShowBackToTop(window.scrollY > 500);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   if (!currentUser) return null;
 
@@ -75,7 +99,7 @@ export function ContentDetailPage() {
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    setIsLoading(true);
+    setPendingAction('submit');
     setActiveModal(null);
     try {
       await submitContent(item.id);
@@ -83,12 +107,12 @@ export function ContentDetailPage() {
     } catch {
       // error toast already shown in context
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
     }
   };
 
   const handleApprove = async (comment?: string) => {
-    setIsLoading(true);
+    setPendingAction('approve');
     setActiveModal(null);
     try {
       await approveContent(item.id, comment);
@@ -101,12 +125,12 @@ export function ContentDetailPage() {
     } catch {
       // error toast already shown in context
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
     }
   };
 
   const handleReject = async (comment?: string) => {
-    setIsLoading(true);
+    setPendingAction('reject');
     setActiveModal(null);
     try {
       await rejectContent(item.id, comment);
@@ -115,12 +139,12 @@ export function ContentDetailPage() {
     } catch {
       // error toast already shown in context
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
     }
   };
 
   const handleDelete = async () => {
-    setIsLoading(true);
+    setPendingAction('delete');
     setActiveModal(null);
     try {
       await deleteContent(item.id);
@@ -128,12 +152,20 @@ export function ContentDetailPage() {
     } catch {
       // error toast already shown in context
     } finally {
-      setIsLoading(false);
+      setPendingAction(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-14 left-0 w-full h-1 z-40 pointer-events-none bg-gray-200/50">
+        <div 
+          className="h-full bg-blue-600 transition-all duration-150 ease-out"
+          style={{ width: `${scrollProgress}%` }}
+        />
+      </div>
+
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Back button */}
@@ -211,6 +243,10 @@ export function ContentDetailPage() {
                   <BookOpen className="h-3.5 w-3.5" />
                   <span>Updated {formatDate(item.updatedAt)}</span>
                 </div>
+                <div className="flex items-center gap-1.5 text-blue-600 font-medium">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Est. {readingTime} min read</span>
+                </div>
                 {item.status === 'APPROVED' && (
                   <div className="flex items-center gap-1.5 text-emerald-600">
                     <Globe className="h-3.5 w-3.5" />
@@ -220,29 +256,29 @@ export function ContentDetailPage() {
               </div>
 
               {/* Body content */}
-              <div className="prose prose-sm max-w-none">
+              <div className="prose prose-slate prose-lg max-w-none prose-p:text-gray-600 prose-headings:text-gray-900 prose-p:leading-relaxed prose-headings:font-bold">
                 {item.body.split('\n\n').map((paragraph, idx) => {
                   if (paragraph.startsWith('## ')) {
                     return (
-                      <h2 key={idx} className="text-base font-bold text-gray-800 mt-5 mb-2">
+                      <h2 key={idx} className="text-xl font-bold text-gray-900 mt-10 mb-4 border-b border-gray-100 pb-2">
                         {paragraph.replace('## ', '')}
                       </h2>
                     );
                   }
                   if (paragraph.startsWith('**') && paragraph.endsWith('**')) {
                     return (
-                      <h3 key={idx} className="text-sm font-bold text-gray-800 mt-3 mb-1">
+                      <h3 key={idx} className="text-lg font-bold text-gray-800 mt-6 mb-3">
                         {paragraph.replace(/\*\*/g, '')}
                       </h3>
                     );
                   }
                   const parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
                   return (
-                    <p key={idx} className="text-sm text-gray-600 leading-relaxed mb-3">
+                    <p key={idx} className="text-base text-gray-700 leading-relaxed mb-6">
                       {parts.map((part, i) => {
                         if (part.startsWith('**') && part.endsWith('**')) {
                           return (
-                            <strong key={i} className="font-semibold text-gray-800">
+                            <strong key={i} className="font-bold text-gray-900">
                               {part.replace(/\*\*/g, '')}
                             </strong>
                           );
@@ -257,7 +293,8 @@ export function ContentDetailPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-5">
+          <aside className="lg:col-span-1">
+            <div className="lg:sticky lg:top-24 space-y-5 self-start">
             {/* Workflow Progress */}
             <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-800 mb-4">Workflow Progress</h3>
@@ -279,15 +316,15 @@ export function ContentDetailPage() {
                   {currentUser.role === 'CREATOR' && (
                     <button
                       onClick={() => setActiveModal('submit')}
-                      disabled={!canSubmit || isLoading}
+                      disabled={!canSubmit || !!pendingAction}
                       className={clsx(
                         'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                        canSubmit && !isLoading
+                        canSubmit && !pendingAction
                           ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
                           : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                       )}
                     >
-                      {isLoading ? (
+                      {pendingAction === 'submit' ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                       ) : (
                         <Send className="h-4 w-4" />
@@ -311,10 +348,10 @@ export function ContentDetailPage() {
                   {canDelete && (
                     <button
                       onClick={() => setActiveModal('delete')}
-                      disabled={isLoading}
+                      disabled={!!pendingAction}
                       className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isLoading ? (
+                      {pendingAction === 'delete' ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-300 border-t-red-600" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
@@ -328,15 +365,15 @@ export function ContentDetailPage() {
                     <>
                       <button
                         onClick={() => setActiveModal('approve')}
-                        disabled={!canApprove || isLoading}
+                        disabled={!canApprove || !!pendingAction}
                         className={clsx(
                           'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                          canApprove && !isLoading
+                          canApprove && !pendingAction
                             ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         )}
                       >
-                        {isLoading ? (
+                        {pendingAction === 'approve' ? (
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                         ) : (
                           <CheckCircle2 className="h-4 w-4" />
@@ -347,15 +384,15 @@ export function ContentDetailPage() {
                       {/* Reject */}
                       <button
                         onClick={() => setActiveModal('reject')}
-                        disabled={!canReject || isLoading}
+                        disabled={!canReject || !!pendingAction}
                         className={clsx(
                           'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                          canReject && !isLoading
+                          canReject && !pendingAction
                             ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         )}
                       >
-                        {isLoading ? (
+                        {pendingAction === 'reject' ? (
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-300 border-t-red-600" />
                         ) : (
                           <XCircle className="h-4 w-4" />
@@ -389,8 +426,19 @@ export function ContentDetailPage() {
               <ApprovalTimeline history={item.history} />
             </div>
           </div>
-        </div>
+        </aside>
       </div>
+    </div>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 h-12 w-12 rounded-full bg-white border border-gray-200 shadow-xl flex items-center justify-center text-gray-600 hover:text-blue-600 hover:scale-110 active:scale-95 transition-all z-40 animate-in zoom-in-95"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+      )}
 
       {/* ── Modals ──────────────────────────────────────────────────────────────── */}
       <ConfirmModal
@@ -400,7 +448,7 @@ export function ContentDetailPage() {
         confirmLabel="Submit"
         variant="success"
         showComment={false}
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleSubmit}
         onCancel={() => setActiveModal(null)}
       />
@@ -419,7 +467,7 @@ export function ContentDetailPage() {
         confirmLabel={currentUser.role === 'REVIEWER_L1' ? 'Approve' : 'Publish'}
         variant="success"
         commentPlaceholder="Add a review comment (optional)..."
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleApprove}
         onCancel={() => setActiveModal(null)}
       />
@@ -431,7 +479,7 @@ export function ContentDetailPage() {
         variant="danger"
         requireComment={true}
         commentPlaceholder="Describe the changes needed (required)..."
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleReject}
         onCancel={() => setActiveModal(null)}
       />
@@ -442,7 +490,7 @@ export function ContentDetailPage() {
         confirmLabel="Delete"
         variant="danger"
         showComment={false}
-        isLoading={isLoading}
+        isLoading={!!pendingAction}
         onConfirm={handleDelete}
         onCancel={() => setActiveModal(null)}
       />
