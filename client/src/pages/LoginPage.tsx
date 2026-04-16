@@ -159,14 +159,18 @@ export function LoginPage() {
                   <div className="text-sm font-medium text-white">{user.name}</div>
                   <div className="text-xs text-slate-400">{user.email}</div>
                 </div>
-                <span
-                  className={clsx(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0',
-                    ROLE_COLORS[user.role]
-                  )}
-                >
-                  {ROLE_LABELS[user.role]}
-                </span>
+                {isLoading && email === user.email ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white flex-shrink-0" />
+                ) : (
+                  <span
+                    className={clsx(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0',
+                      ROLE_COLORS[user.role]
+                    )}
+                  >
+                    {ROLE_LABELS[user.role]}
+                  </span>
+                )}
               </button>
             ))}
           </div>

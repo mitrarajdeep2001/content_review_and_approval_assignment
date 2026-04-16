@@ -8,7 +8,6 @@ import React, {
 } from 'react';
 import type { AppContextType, AuthUser, ContentItem, FilterState } from '../types';
 import { getSession, saveSession, clearSession } from '../utils/auth';
-import { generateId } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
@@ -24,26 +23,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [contentList, setContentList] = useState<ContentItem[]>([]);
   const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
 
-  useEffect(() => {
-    const fetchContents = async () => {
-      try {
-        const response = await api.get('/content');
-        setContentList(response.data);
-      } catch (error) {
-        console.error('Failed to fetch contents:', error);
-      }
-    };
-    fetchContents();
+  // ─── Fetch content list ────────────────────────────────────────────────────
+  const refreshContents = useCallback(async () => {
+    try {
+      const response = await api.get('/content');
+      setContentList(response.data);
+    } catch (error) {
+      console.error('Failed to fetch contents:', error);
+    }
   }, []);
 
-  // ─── Auth ────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    refreshContents();
+  }, [refreshContents]);
+
+  // ─── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchMe = async () => {
       try {
         const response = await api.get('/auth/me');
         setCurrentUser(response.data);
-      } catch (error) {
-        // Not logged in or error, just clear current user
+      } catch {
         setCurrentUser(null);
       }
     };
@@ -69,26 +69,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       clearSession();
       setCurrentUser(null);
       toast.success('Logged out successfully');
-    } catch (error) {
+    } catch {
       toast.error('Logout failed');
     }
   }, []);
 
-  // ─── Filters ─────────────────────────────────────────────────────────────────
+  // ─── Filters ───────────────────────────────────────────────────────────────
   const setFilters = useCallback((partial: Partial<FilterState>) => {
     setFiltersState((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  // ─── Create Content ───────────────────────────────────────────────────────────
+  // ─── Create Content ────────────────────────────────────────────────────────
   const createContent = useCallback(
     async (formData: FormData): Promise<ContentItem> => {
       if (!currentUser) throw new Error('Not authenticated');
-      
       try {
         const response = await api.post('/content', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         const newItem = response.data;
         setContentList((prev) => [newItem, ...prev]);
@@ -101,12 +98,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser]
   );
 
-  // ─── Update Content ───────────────────────────────────────────────────────────
+  // ─── Update Content ────────────────────────────────────────────────────────
   const updateContent = useCallback(
     async (id: string, formData: FormData) => {
       if (!currentUser) return;
-      
-      const item = contentList.find(c => c.id === id);
+
+      const item = contentList.find((c) => c.id === id);
       if (item && item.status !== 'DRAFT' && item.status !== 'CHANGES_REQUESTED') {
         toast.error('Content can only be edited when it is a draft or changes are requested.');
         return;
@@ -114,21 +111,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const response = await api.put(`/content/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
         const updatedItem = response.data;
-        
         setContentList((prev) =>
-          prev.map((item) => {
-            if (item.id !== id) return item;
-            return {
-              ...item,
-              ...updatedItem,
-              // history is managed separately or we'd need to fetch it
-            };
-          })
+          prev.map((c) => (c.id !== id ? c : { ...c, ...updatedItem }))
         );
       } catch (error) {
         toast.error('Failed to update content');
@@ -138,19 +125,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser, contentList]
   );
 
+  // ─── Delete Content ────────────────────────────────────────────────────────
   const deleteContent = useCallback(
     async (id: string) => {
       if (!currentUser) return;
-      
-      const item = contentList.find(c => c.id === id);
-      if (item && item.status === 'IN_REVIEW' || item?.status === 'APPROVED') {
+
+      const item = contentList.find((c) => c.id === id);
+      if (item && (item.status === 'IN_REVIEW' || item.status === 'APPROVED')) {
         toast.error('Locked content cannot be deleted.');
         return;
       }
 
       try {
         await api.delete(`/content/${id}`);
-        setContentList((prev) => prev.filter((item) => item.id !== id));
+        setContentList((prev) => prev.filter((c) => c.id !== id));
         toast.success('Content deleted');
       } catch (error) {
         toast.error('Failed to delete content');
@@ -160,125 +148,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser, contentList]
   );
 
-  // ─── Submit Content ───────────────────────────────────────────────────────────
+  // ─── Submit Content ────────────────────────────────────────────────────────
   const submitContent = useCallback(
-    (id: string) => {
+    async (id: string) => {
       if (!currentUser) return;
-      setContentList((prev) =>
-        prev.map((item) => {
-          if (item.id !== id) return item;
-          if (item.status !== 'DRAFT' && item.status !== 'CHANGES_REQUESTED') {
-            toast.error('Only draft or rejected content can be submitted.');
-            return item;
-          }
-          const now = new Date().toISOString();
-          return {
-            ...item,
-            status: 'IN_REVIEW' as const,
-            currentReviewStage: 1,
-            isLocked: true,
-            updatedAt: now,
-            history: [
-              ...item.history,
-              {
-                id: generateId(),
-                action: 'SUBMITTED' as const,
-                actor: currentUser.name,
-                role: currentUser.role,
-                timestamp: now,
-              },
-            ],
-          };
-        })
-      );
+      try {
+        await api.patch(`/content/${id}/submit`);
+        // Refetch the full list so history & status are fresh from DB
+        await refreshContents();
+      } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to submit content';
+        toast.error(message);
+        throw error;
+      }
     },
-    [currentUser]
+    [currentUser, refreshContents]
   );
 
-  // ─── Approve Content ──────────────────────────────────────────────────────────
+  // ─── Approve Content ───────────────────────────────────────────────────────
   const approveContent = useCallback(
-    (id: string, comment?: string) => {
+    async (id: string, comment?: string) => {
       if (!currentUser) return;
-      setContentList((prev) =>
-        prev.map((item) => {
-          if (item.id !== id) return item;
-
-          if (item.status !== 'IN_REVIEW') {
-            toast.error('Content must be in review to approve.');
-            return item;
-          }
-
-          // Role and Stage Checks
-          if (item.currentReviewStage === 1 && currentUser.role !== 'REVIEWER_L1') {
-            toast.error('Only L1 Reviewers can approve stage 1 content.');
-            return item;
-          }
-          if (item.currentReviewStage === 2 && currentUser.role !== 'REVIEWER_L2') {
-            toast.error('Only L2 Reviewers can approve stage 2 content.');
-            return item;
-          }
-
-          const now = new Date().toISOString();
-          const nextStage = item.currentReviewStage === 1 ? 2 : null;
-          const nextStatus = nextStage === null ? ('APPROVED' as const) : ('IN_REVIEW' as const);
-          const action = nextStage === 2 ? 'APPROVED_L1' : 'APPROVED';
-
-          return {
-            ...item,
-            status: nextStatus,
-            currentReviewStage: nextStage,
-            isLocked: true,
-            updatedAt: now,
-            history: [
-              ...item.history,
-              {
-                id: generateId(),
-                action: action as any,
-                actor: currentUser.name,
-                role: currentUser.role,
-                timestamp: now,
-                comment,
-              },
-            ],
-          };
-        })
-      );
+      try {
+        const response = await api.patch(`/content/${id}/approve`, { comment });
+        const updatedItem: ContentItem = response.data;
+        // Replace the item in state with the fresh version (includes updated history)
+        setContentList((prev) =>
+          prev.map((c) => (c.id !== id ? c : updatedItem))
+        );
+      } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to approve content';
+        toast.error(message);
+        throw error;
+      }
     },
     [currentUser]
   );
 
-  // ─── Reject Content ───────────────────────────────────────────────────────────
+  // ─── Reject Content ────────────────────────────────────────────────────────
   const rejectContent = useCallback(
-    (id: string, comment?: string) => {
+    async (id: string, comment?: string) => {
       if (!currentUser) return;
-      setContentList((prev) =>
-        prev.map((item) => {
-          if (item.id !== id) return item;
-          if (item.status !== 'IN_REVIEW') {
-            toast.error('Content must be in review to reject.');
-            return item;
-          }
-          const now = new Date().toISOString();
-          return {
-            ...item,
-            status: 'CHANGES_REQUESTED' as const,
-            currentReviewStage: null,
-            isLocked: false,
-            updatedAt: now,
-            history: [
-              ...item.history,
-              {
-                id: generateId(),
-                action: 'REJECTED' as const,
-                actor: currentUser.name,
-                role: currentUser.role,
-                timestamp: now,
-                comment,
-              },
-            ],
-          };
-        })
-      );
+      try {
+        const response = await api.patch(`/content/${id}/reject`, { comment });
+        const updatedItem: ContentItem = response.data;
+        setContentList((prev) =>
+          prev.map((c) => (c.id !== id ? c : updatedItem))
+        );
+      } catch (error: any) {
+        const message = error.response?.data?.message || 'Failed to reject content';
+        toast.error(message);
+        throw error;
+      }
     },
     [currentUser]
   );

@@ -8,6 +8,14 @@ import { ContentListPage } from './pages/ContentListPage';
 import { ContentDetailPage } from './pages/ContentDetailPage';
 import { CreateContentPage } from './pages/CreateContentPage';
 import { EditContentPage } from './pages/EditContentPage';
+import { ReviewerDashboard } from './pages/ReviewerDashboard';
+import { useApp } from './store/AppContext';
+
+function RoleBasedHome() {
+  const { currentUser } = useApp();
+  if (!currentUser) return null;
+  return currentUser.role === 'CREATOR' ? <ContentListPage /> : <ReviewerDashboard />;
+}
 
 export default function App() {
   return (
@@ -25,7 +33,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<ContentListPage />} />
+            <Route path="/" element={<RoleBasedHome />} />
             <Route path="/content/:id" element={<ContentDetailPage />} />
             <Route
               path="/create"

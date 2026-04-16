@@ -40,6 +40,7 @@ export const approvalLogs = pgTable('approval_logs', {
   contentId: uuid('content_id').references(() => contents.id, { onDelete: 'cascade' }).notNull(),
   reviewerId: uuid('reviewer_id').references(() => users.id).notNull(),
   status: contentStatusEnum('status').notNull(),
+  action: text('action'), // richer label: SUBMITTED | APPROVED_L1 | APPROVED_L2 | APPROVED | REJECTED | EDITED | CREATED
   comment: text('comment'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

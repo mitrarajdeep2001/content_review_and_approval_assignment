@@ -58,53 +58,78 @@ export function ContentDetailPage() {
     );
   }
 
-  const canSubmit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
-  const canEdit = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
-  const canDelete = currentUser.role === 'CREATOR' && (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+  const canSubmit =
+    currentUser.role === 'CREATOR' &&
+    (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+  const canEdit =
+    currentUser.role === 'CREATOR' &&
+    (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+  const canDelete =
+    currentUser.role === 'CREATOR' &&
+    (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
   const canApprove =
     item.status === 'IN_REVIEW' &&
     ((item.currentReviewStage === 1 && currentUser.role === 'REVIEWER_L1') ||
       (item.currentReviewStage === 2 && currentUser.role === 'REVIEWER_L2'));
   const canReject = canApprove;
 
-  const simulateLoading = async (fn: () => void | Promise<void>) => {
-    setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 600));
-    await fn();
-    setIsLoading(false);
-  };
-
+  // ─── Handlers ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    await simulateLoading(() => {
-      submitContent(item.id);
-      toast.success('Content submitted for review!');
-    });
+    setIsLoading(true);
     setActiveModal(null);
+    try {
+      await submitContent(item.id);
+      toast.success('Content submitted for review!');
+    } catch {
+      // error toast already shown in context
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleApprove = async (comment?: string) => {
-    await simulateLoading(() => {
-      approveContent(item.id, comment);
-      toast.success('🎉 Content approved and published!');
-    });
+    setIsLoading(true);
     setActiveModal(null);
-    navigate('/');
+    try {
+      await approveContent(item.id, comment);
+      const msg =
+        currentUser.role === 'REVIEWER_L1'
+          ? 'Approved! Content moved to Stage 2.'
+          : 'Content fully approved and published!';
+      toast.success(msg);
+      navigate('/');
+    } catch {
+      // error toast already shown in context
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReject = async (comment?: string) => {
-    await simulateLoading(() => {
-      rejectContent(item.id, comment);
-      toast.error('Changes requested. Content returned to creator.');
-    });
+    setIsLoading(true);
     setActiveModal(null);
+    try {
+      await rejectContent(item.id, comment);
+      toast.success('Changes requested. Content returned to creator.');
+      navigate('/');
+    } catch {
+      // error toast already shown in context
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   const handleDelete = async () => {
-    await simulateLoading(async () => {
+    setIsLoading(true);
+    setActiveModal(null);
+    try {
       await deleteContent(item.id);
       navigate('/');
-    });
-    setActiveModal(null);
+    } catch {
+      // error toast already shown in context
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -154,7 +179,14 @@ export function ContentDetailPage() {
                 <div className="flex items-center gap-2">
                   <StatusBadge status={item.status} />
                   {item.status === 'IN_REVIEW' && item.currentReviewStage && (
-                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200 uppercase tracking-wide">
+                    <span
+                      className={clsx(
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border uppercase tracking-wide',
+                        item.currentReviewStage === 1
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-violet-50 text-violet-700 border-violet-200'
+                      )}
+                    >
                       Stage {item.currentReviewStage} Review
                     </span>
                   )}
@@ -204,13 +236,16 @@ export function ContentDetailPage() {
                       </h3>
                     );
                   }
-                  // Handle inline bold
                   const parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
                   return (
                     <p key={idx} className="text-sm text-gray-600 leading-relaxed mb-3">
                       {parts.map((part, i) => {
                         if (part.startsWith('**') && part.endsWith('**')) {
-                          return <strong key={i} className="font-semibold text-gray-800">{part.replace(/\*\*/g, '')}</strong>;
+                          return (
+                            <strong key={i} className="font-semibold text-gray-800">
+                              {part.replace(/\*\*/g, '')}
+                            </strong>
+                          );
                         }
                         return <span key={i}>{part}</span>;
                       })}
@@ -236,24 +271,30 @@ export function ContentDetailPage() {
               {item.status === 'APPROVED' ? (
                 <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
                   <CheckCircle2 className="h-4 w-4" />
-                  This content is approved & published.
+                  This content is approved &amp; published.
                 </div>
               ) : (
                 <div className="space-y-2">
                   {/* Submit */}
-                  <button
-                    onClick={() => setActiveModal('submit')}
-                    disabled={!canSubmit || isLoading}
-                    className={clsx(
-                      'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                      canSubmit
-                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    )}
-                  >
-                    <Send className="h-4 w-4" />
-                    Submit for Review
-                  </button>
+                  {currentUser.role === 'CREATOR' && (
+                    <button
+                      onClick={() => setActiveModal('submit')}
+                      disabled={!canSubmit || isLoading}
+                      className={clsx(
+                        'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
+                        canSubmit && !isLoading
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      )}
+                    >
+                      {isLoading ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      Submit for Review
+                    </button>
+                  )}
 
                   {/* Edit */}
                   {canEdit && (
@@ -271,51 +312,68 @@ export function ContentDetailPage() {
                     <button
                       onClick={() => setActiveModal('delete')}
                       disabled={isLoading}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {isLoading ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-300 border-t-red-600" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                       Delete Content
                     </button>
                   )}
 
                   {/* Approve */}
-                  <button
-                    onClick={() => setActiveModal('approve')}
-                    disabled={!canApprove || isLoading}
-                    className={clsx(
-                      'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                      canApprove
-                        ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    )}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Approve
-                  </button>
+                  {(currentUser.role === 'REVIEWER_L1' || currentUser.role === 'REVIEWER_L2') && (
+                    <>
+                      <button
+                        onClick={() => setActiveModal('approve')}
+                        disabled={!canApprove || isLoading}
+                        className={clsx(
+                          'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
+                          canApprove && !isLoading
+                            ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        )}
+                      >
+                        {isLoading ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        {currentUser.role === 'REVIEWER_L1' ? 'Approve (→ Stage 2)' : 'Approve & Publish'}
+                      </button>
 
-                  {/* Reject */}
-                  <button
-                    onClick={() => setActiveModal('reject')}
-                    disabled={!canReject || isLoading}
-                    className={clsx(
-                      'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                      canReject
-                        ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    )}
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Request Changes
-                  </button>
+                      {/* Reject */}
+                      <button
+                        onClick={() => setActiveModal('reject')}
+                        disabled={!canReject || isLoading}
+                        className={clsx(
+                          'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
+                          canReject && !isLoading
+                            ? 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        )}
+                      >
+                        {isLoading ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-300 border-t-red-600" />
+                        ) : (
+                          <XCircle className="h-4 w-4" />
+                        )}
+                        Request Changes
+                      </button>
 
-                  {/* Helper text */}
-                  {item.status === 'IN_REVIEW' && !canApprove && (
-                    <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2.5 text-center mt-3 border border-amber-100 italic">
-                      {item.currentReviewStage === 1
-                        ? "Currently awaiting L1 Reviewer approval."
-                        : "Currently awaiting L2 Reviewer approval."}
-                    </p>
+                      {/* Helper text when reviewer but not the right stage */}
+                      {item.status === 'IN_REVIEW' && !canApprove && (
+                        <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2.5 text-center mt-3 border border-amber-100 italic">
+                          {item.currentReviewStage === 1
+                            ? 'Currently awaiting L1 Reviewer approval.'
+                            : 'Currently awaiting L2 Reviewer approval.'}
+                        </p>
+                      )}
+                    </>
                   )}
+
                   {!canSubmit && !canEdit && !canApprove && !canReject && item.status !== 'IN_REVIEW' && (
                     <p className="text-xs text-gray-400 text-center pt-1">
                       No actions available for your role at this stage.
@@ -334,22 +392,31 @@ export function ContentDetailPage() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modals ──────────────────────────────────────────────────────────────── */}
       <ConfirmModal
         isOpen={activeModal === 'submit'}
         title="Submit for Review"
         description="Are you sure you want to submit this content for review? It will be locked for editing until a reviewer responds."
         confirmLabel="Submit"
         variant="success"
+        showComment={false}
         isLoading={isLoading}
         onConfirm={handleSubmit}
         onCancel={() => setActiveModal(null)}
       />
       <ConfirmModal
         isOpen={activeModal === 'approve'}
-        title="Approve Content"
-        description="This will mark the content as fully approved and published. This action cannot be undone."
-        confirmLabel="Publish"
+        title={
+          currentUser.role === 'REVIEWER_L1'
+            ? 'Approve & Move to Stage 2'
+            : 'Approve & Publish'
+        }
+        description={
+          currentUser.role === 'REVIEWER_L1'
+            ? 'This will pass the content to the L2 reviewer for final approval.'
+            : 'This will mark the content as fully approved and published. This action cannot be undone.'
+        }
+        confirmLabel={currentUser.role === 'REVIEWER_L1' ? 'Approve' : 'Publish'}
         variant="success"
         commentPlaceholder="Add a review comment (optional)..."
         isLoading={isLoading}

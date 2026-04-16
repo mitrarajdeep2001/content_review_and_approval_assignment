@@ -61,9 +61,9 @@ export interface AppContextType {
   createContent: (formData: FormData) => Promise<ContentItem>;
   updateContent: (id: string, formData: FormData) => Promise<void>;
   deleteContent: (id: string) => Promise<void>;
-  submitContent: (id: string) => void;
-  approveContent: (id: string, comment?: string) => void;
-  rejectContent: (id: string, comment?: string) => void;
+  submitContent: (id: string) => Promise<void>;
+  approveContent: (id: string, comment?: string) => Promise<void>;
+  rejectContent: (id: string, comment?: string) => Promise<void>;
 
   // Filters
   filters: FilterState;

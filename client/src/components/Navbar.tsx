@@ -4,16 +4,25 @@ import { useApp } from '../store/AppContext';
 import { RoleBadge } from './RoleBadge';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 export function Navbar() {
   const { currentUser, logout } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch {
+      // Error handled in context
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const navLinks = [
@@ -84,10 +93,15 @@ export function Navbar() {
                 />
                 <button
                   onClick={handleLogout}
+                  disabled={isLoggingOut}
                   title="Logout"
-                  className="rounded-lg p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  className="rounded-lg p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
-                  <LogOut className="h-4 w-4" />
+                  {isLoggingOut ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                  ) : (
+                    <LogOut className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             )}
