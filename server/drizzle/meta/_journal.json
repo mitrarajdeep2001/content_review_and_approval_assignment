@@ -36,6 +36,20 @@
       "when": 1776309372058,
       "tag": "0004_sweet_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776331607713,
+      "tag": "0005_sparkling_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776338345308,
+      "tag": "0006_conscious_falcon",
+      "breakpoints": true
     }
   ]
 }

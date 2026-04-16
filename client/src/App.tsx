@@ -35,6 +35,7 @@ export default function App() {
           >
             <Route path="/" element={<RoleBasedHome />} />
             <Route path="/content/:id" element={<ContentDetailPage />} />
+            <Route path="/sub-content/:id" element={<ContentDetailPage />} />
             <Route
               path="/create"
               element={

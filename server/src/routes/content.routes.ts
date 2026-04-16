@@ -11,33 +11,25 @@ import {
   approveContent,
   rejectContent,
 } from '../controllers/content.controller.js';
+import { getSubContentsByParent, createSubContent } from '../controllers/subContent.controller.js';
+import { authenticate } from '../middleware/auth.middleware.js';
+import { upload } from '../middleware/upload.middleware.js';
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'public/uploads';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
-const upload = multer({ storage });
 const router = Router();
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
-router.get('/', getContents);
-router.post('/', upload.single('imageFile'), createContent);
-router.put('/:id', upload.single('imageFile'), updateContent);
-router.delete('/:id', deleteContent);
+router.get('/', authenticate, getContents);
+router.post('/', authenticate, upload.single('imageFile'), createContent);
+router.put('/:id', authenticate, upload.single('imageFile'), updateContent);
+router.delete('/:id', authenticate, deleteContent);
 
 // ─── Workflow Actions ─────────────────────────────────────────────────────────
-router.patch('/:id/submit', submitContent);
-router.patch('/:id/approve', approveContent);
-router.patch('/:id/reject', rejectContent);
+router.patch('/:id/submit', authenticate, submitContent);
+router.patch('/:id/approve', authenticate, approveContent);
+router.patch('/:id/reject', authenticate, rejectContent);
+
+// ─── Sub-Content ──────────────────────────────────────────────────────────────
+router.get('/:parentId/sub-content', authenticate, getSubContentsByParent);
+router.post('/:parentId/sub-content', authenticate, upload.single('imageFile'), createSubContent);
 
 export default router;

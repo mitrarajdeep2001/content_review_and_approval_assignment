@@ -60,6 +60,20 @@ export function ContentCard({ item, currentRole }: Props) {
           {truncate(item.description, 120)}
         </p>
 
+        {item.subContentProgress && item.subContentProgress.total > 0 && (
+          <div className="flex items-center gap-2 mb-4 bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">
+            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+               <div 
+                 className="h-full bg-blue-500 transition-all duration-500" 
+                 style={{ width: `${(item.subContentProgress.approved / item.subContentProgress.total) * 100}%` }}
+               />
+            </div>
+            <span className="text-[10px] font-bold text-gray-500 whitespace-nowrap">
+              {item.subContentProgress.approved}/{item.subContentProgress.total} Sub-contents
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-400">{formatRelative(item.updatedAt)}</span>
 

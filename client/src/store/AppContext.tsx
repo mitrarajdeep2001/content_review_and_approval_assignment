@@ -204,6 +204,87 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser]
   );
 
+  // ─── Sub-Content Actions ───────────────────────────────────────────────────
+  const createSubContent = useCallback(
+    async (parentId: string, data: FormData) => {
+      try {
+        const response = await api.post(`/content/${parentId}/sub-content`, data);
+        await refreshContents();
+        return response.data;
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to create sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
+  const updateSubContent = useCallback(
+    async (id: string, data: FormData) => {
+      try {
+        await api.put(`/sub-content/${id}`, data);
+        await refreshContents();
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to update sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
+  const deleteSubContent = useCallback(
+    async (id: string) => {
+      try {
+        await api.delete(`/sub-content/${id}`);
+        await refreshContents();
+        toast.success('Sub-content deleted');
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to delete sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
+  const submitSubContent = useCallback(
+    async (id: string) => {
+      try {
+        await api.patch(`/sub-content/${id}/submit`);
+        await refreshContents();
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to submit sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
+  const approveSubContent = useCallback(
+    async (id: string, comment?: string) => {
+      try {
+        await api.patch(`/sub-content/${id}/approve`, { comment });
+        await refreshContents();
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to approve sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
+  const rejectSubContent = useCallback(
+    async (id: string, comment?: string) => {
+      try {
+        await api.patch(`/sub-content/${id}/reject`, { comment });
+        await refreshContents();
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to reject sub-content');
+        throw error;
+      }
+    },
+    [refreshContents]
+  );
+
   const value = useMemo<AppContextType>(
     () => ({
       currentUser,
@@ -216,6 +297,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       submitContent,
       approveContent,
       rejectContent,
+      createSubContent,
+      updateSubContent,
+      deleteSubContent,
+      submitSubContent,
+      approveSubContent,
+      rejectSubContent,
       filters,
       setFilters,
     }),
@@ -230,6 +317,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       submitContent,
       approveContent,
       rejectContent,
+      createSubContent,
+      updateSubContent,
+      deleteSubContent,
+      submitSubContent,
+      approveSubContent,
+      rejectSubContent,
       filters,
       setFilters,
     ]

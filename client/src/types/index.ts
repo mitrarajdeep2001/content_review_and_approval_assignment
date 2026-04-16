@@ -18,6 +18,30 @@ export interface ApprovalHistoryEntry {
   comment?: string;
 }
 
+// ─── Sub-Content ──────────────────────────────────────────────────────────────
+export interface SubContent {
+  id: string;
+  parentId: string;
+  title: string;
+  description: string;
+  body: string;
+  image?: string;
+  status: ContentStatus;
+  isLocked: boolean;
+  currentReviewStage?: 1 | 2 | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  history: ApprovalHistoryEntry[];
+  parentTitle?: string;
+  creatorName?: string;
+}
+
+export interface SubContentProgress {
+  total: number;
+  approved: number;
+}
+
 // ─── Content Item ─────────────────────────────────────────────────────────────
 export interface ContentItem {
   id: string;
@@ -32,6 +56,8 @@ export interface ContentItem {
   createdAt: string;
   updatedAt: string;
   history: ApprovalHistoryEntry[];
+  subContentProgress?: SubContentProgress;
+  subContents?: SubContent[];
 }
 
 // ─── Auth User ────────────────────────────────────────────────────────────────
@@ -64,6 +90,14 @@ export interface AppContextType {
   submitContent: (id: string) => Promise<void>;
   approveContent: (id: string, comment?: string) => Promise<void>;
   rejectContent: (id: string, comment?: string) => Promise<void>;
+
+  // Sub-Content
+  createSubContent: (parentId: string, data: FormData) => Promise<SubContent>;
+  updateSubContent: (id: string, data: FormData) => Promise<void>;
+  deleteSubContent: (id: string) => Promise<void>;
+  submitSubContent: (id: string) => Promise<void>;
+  approveSubContent: (id: string, comment?: string) => Promise<void>;
+  rejectSubContent: (id: string, comment?: string) => Promise<void>;
 
   // Filters
   filters: FilterState;

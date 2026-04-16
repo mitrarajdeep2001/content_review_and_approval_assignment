@@ -35,13 +35,33 @@ export const contents = pgTable('contents', {
 export type Content = typeof contents.$inferSelect;
 export type NewContent = typeof contents.$inferInsert;
 
+export const subContents = pgTable('sub_contents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentId: uuid('parent_content_id').references(() => contents.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  body: text('body').notNull(),
+  image: text('image'),
+  status: contentStatusEnum('status').default('DRAFT').notNull(),
+  currentReviewStage: integer('current_review_stage'),
+  isLocked: boolean('is_locked').default(false).notNull(),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type SubContent = typeof subContents.$inferSelect;
+export type NewSubContent = typeof subContents.$inferInsert;
+
 export const approvalLogs = pgTable('approval_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  contentId: uuid('content_id').references(() => contents.id, { onDelete: 'cascade' }).notNull(),
+  contentId: uuid('content_id').references(() => contents.id, { onDelete: 'cascade' }),
+  subContentId: uuid('sub_content_id').references(() => subContents.id, { onDelete: 'cascade' }),
   reviewerId: uuid('reviewer_id').references(() => users.id).notNull(),
   status: contentStatusEnum('status').notNull(),
   action: text('action'), // richer label: SUBMITTED | APPROVED_L1 | APPROVED_L2 | APPROVED | REJECTED | EDITED | CREATED
   comment: text('comment'),
+  stage: integer('stage'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

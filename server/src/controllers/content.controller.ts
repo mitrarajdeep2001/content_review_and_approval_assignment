@@ -16,7 +16,8 @@ function getSessionUser(req: Request) {
 // ─── GET /api/content ─────────────────────────────────────────────────────────
 export const getContents = async (req: Request, res: Response) => {
   try {
-    const data = await contentService.fetchAllContents();
+    const user = (req as any).user;
+    const data = await contentService.fetchAllContents(user);
     res.status(200).json(data);
   } catch (error) {
     console.error('getContents error', error);
@@ -76,7 +77,7 @@ export const updateContent = async (req: Request, res: Response) => {
     const user = getSessionUser(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
 
-    const all = await contentService.fetchAllContents();
+    const all = await contentService.fetchAllContents(user);
     const item = all.find((c) => c.id === id);
     if (!item) return res.status(404).json({ message: 'Content not found' });
     if (item.status === 'IN_REVIEW' || item.status === 'APPROVED') {
@@ -109,11 +110,11 @@ export const deleteContent = async (req: Request, res: Response) => {
     const user = getSessionUser(req);
     if (!user) return res.status(401).json({ message: 'Not authenticated' });
 
-    const all = await contentService.fetchAllContents();
+    const all = await contentService.fetchAllContents(user);
     const item = all.find((c) => c.id === id);
     if (!item) return res.status(404).json({ message: 'Content not found' });
-    if (item.status === 'IN_REVIEW' || item.status === 'APPROVED') {
-      return res.status(403).json({ message: 'Content is locked and cannot be deleted' });
+    if (item.status !== 'DRAFT') {
+      return res.status(403).json({ message: 'Content can only be deleted in DRAFT status' });
     }
 
     await contentService.deleteContent(id);
@@ -157,7 +158,7 @@ export const approveContent = async (req: Request, res: Response) => {
     const updated = await contentService.approveContent(id, user.id, user.role, comment);
 
     // Return full updated content list item with fresh history
-    const all = await contentService.fetchAllContents();
+    const all = await contentService.fetchAllContents(user);
     const fresh = all.find((c) => c.id === id);
     res.status(200).json(fresh ?? updated);
   } catch (error: any) {
@@ -188,7 +189,7 @@ export const rejectContent = async (req: Request, res: Response) => {
     const updated = await contentService.rejectContent(id, user.id, user.role, comment);
 
     // Return fresh content with history
-    const all = await contentService.fetchAllContents();
+    const all = await contentService.fetchAllContents(user);
     const fresh = all.find((c) => c.id === id);
     res.status(200).json(fresh ?? updated);
   } catch (error: any) {

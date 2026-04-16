@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
 import { useApp } from '../store/AppContext';
-import type { ContentItem, Role } from '../types';
+import type { ContentItem, SubContent, Role } from '../types';
 
 type ReviewTab = 'pending' | 'recent';
+
+// Union type for items in the review queue
+export type ReviewQueueItem = ContentItem | SubContent;
 
 interface UseReviewQueueOptions {
   search: string;
@@ -10,9 +13,9 @@ interface UseReviewQueueOptions {
 }
 
 interface ReviewQueueResult {
-  pendingItems: ContentItem[];
-  recentItems: ContentItem[];
-  filteredItems: ContentItem[];
+  pendingItems: ReviewQueueItem[];
+  recentItems: ReviewQueueItem[];
+  filteredItems: ReviewQueueItem[];
   pendingCount: number;
   approvedByMeCount: number;
   rejectedByMeCount: number;
@@ -43,16 +46,27 @@ export function useReviewQueue(
 
     const stage = getReviewerStage(currentUser.role);
     const userName = currentUser.name;
+    const reviewActions = new Set(['APPROVED_L1', 'APPROVED_L2', 'APPROVED', 'REJECTED']);
 
-    // Pending: IN_REVIEW at the reviewer's stage
-    const pendingItems = contentList.filter(
+    // 1. Flatten all possible reviewable items (Parent contents + all their SubContents)
+    const allItems: ReviewQueueItem[] = [];
+    contentList.forEach((parent) => {
+      allItems.push(parent);
+      if (parent.subContents) {
+        parent.subContents.forEach((child) => {
+          allItems.push(child);
+        });
+      }
+    });
+
+    // 2. Filter Pending: IN_REVIEW at the current reviewer's stage
+    const pendingItems = allItems.filter(
       (item) =>
         item.status === 'IN_REVIEW' && item.currentReviewStage === stage
     );
 
-    // Recently reviewed: items where this user's last history action is APPROVED_L1/APPROVED_L2/APPROVED/REJECTED
-    const reviewActions = new Set(['APPROVED_L1', 'APPROVED_L2', 'APPROVED', 'REJECTED']);
-    const recentItems = contentList
+    // 3. Filter Recently reviewed: items where this user's last history action is in reviewActions
+    const recentItems = allItems
       .filter((item) => {
         const relevantEntries = item.history.filter(
           (h) => h.actor === userName && reviewActions.has(h.action)
@@ -73,8 +87,8 @@ export function useReviewQueue(
       })
       .slice(0, 5); // Show last 5
 
-    // Stats
-    const approvedByMeCount = contentList.filter((item) =>
+    // 4. Stats
+    const approvedByMeCount = allItems.filter((item) =>
       item.history.some(
         (h) =>
           h.actor === userName &&
@@ -82,18 +96,19 @@ export function useReviewQueue(
       )
     ).length;
 
-    const rejectedByMeCount = contentList.filter((item) =>
+    const rejectedByMeCount = allItems.filter((item) =>
       item.history.some((h) => h.actor === userName && h.action === 'REJECTED')
     ).length;
 
-    // Apply search filter
+    // 5. Apply search filter
     const needle = search.toLowerCase();
     const sourceItems = tab === 'pending' ? pendingItems : recentItems;
     const filteredItems = needle
       ? sourceItems.filter(
           (item) =>
             item.title.toLowerCase().includes(needle) ||
-            item.description.toLowerCase().includes(needle)
+            item.description.toLowerCase().includes(needle) ||
+            ('parentTitle' in item && item.parentTitle?.toLowerCase().includes(needle))
         )
       : sourceItems;
 

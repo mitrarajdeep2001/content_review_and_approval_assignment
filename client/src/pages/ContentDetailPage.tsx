@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Send,
@@ -22,6 +22,7 @@ import { WorkflowProgress } from '../components/WorkflowProgress';
 import { ApprovalTimeline } from '../components/ApprovalTimeline';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { formatDate } from '../utils/helpers';
+import { SubContentList } from '../components/SubContentList';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -29,13 +30,30 @@ type ModalType = 'approve' | 'reject' | 'submit' | 'delete' | null;
 
 export function ContentDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { pathname } = useLocation();
   const currentUser = useRequireAuth();
-  const { contentList, submitContent, approveContent, rejectContent, deleteContent } = useApp();
+  const { 
+    contentList, 
+    submitContent, approveContent, rejectContent, deleteContent,
+    submitSubContent, approveSubContent, rejectSubContent, deleteSubContent 
+  } = useApp();
   const navigate = useNavigate();
+  
+  const isSubMode = pathname.includes('/sub-content/');
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [pendingAction, setPendingAction] = useState<'submit' | 'approve' | 'reject' | 'delete' | null>(null);
 
-  const item = contentList.find((c) => c.id === id);
+  // Find either parent item or sub-content item with its parent
+  const { mainItem, parentItem } = useMemo(() => {
+    if (isSubMode) {
+      const parent = contentList.find(c => c.subContents?.some(sc => sc.id === id));
+      const sub = parent?.subContents?.find(sc => sc.id === id);
+      return { mainItem: sub, parentItem: parent };
+    }
+    return { mainItem: contentList.find(c => c.id === id), parentItem: null };
+  }, [contentList, id, isSubMode]);
+
+  const item = mainItem;
 
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -85,72 +103,91 @@ export function ContentDetailPage() {
   const canSubmit =
     currentUser.role === 'CREATOR' &&
     (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+  
   const canEdit =
     currentUser.role === 'CREATOR' &&
     (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
   const canDelete =
-    currentUser.role === 'CREATOR' &&
-    (item.status === 'DRAFT' || item.status === 'CHANGES_REQUESTED');
+    currentUser.role === 'CREATOR' && item.status === 'DRAFT';
+  
   const canApprove =
     item.status === 'IN_REVIEW' &&
     ((item.currentReviewStage === 1 && currentUser.role === 'REVIEWER_L1') ||
       (item.currentReviewStage === 2 && currentUser.role === 'REVIEWER_L2'));
+  
+  const canFinalize = canApprove;
+  
   const canReject = canApprove;
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (!item) return;
     setPendingAction('submit');
     setActiveModal(null);
     try {
-      await submitContent(item.id);
-      toast.success('Content submitted for review!');
+      if (isSubMode) {
+        await submitSubContent(item.id);
+      } else {
+        await submitContent(item.id);
+      }
+      toast.success('Submitted for review!');
     } catch {
-      // error toast already shown in context
     } finally {
       setPendingAction(null);
     }
   };
 
   const handleApprove = async (comment?: string) => {
+    if (!item) return;
     setPendingAction('approve');
     setActiveModal(null);
     try {
-      await approveContent(item.id, comment);
-      const msg =
-        currentUser.role === 'REVIEWER_L1'
-          ? 'Approved! Content moved to Stage 2.'
-          : 'Content fully approved and published!';
+      if (isSubMode) {
+        await approveSubContent(item.id, comment);
+      } else {
+        await approveContent(item.id, comment);
+      }
+      const msg = currentUser.role === 'REVIEWER_L1' 
+        ? 'Approved! Item moved to Stage 2.' 
+        : 'Item fully approved and published!';
       toast.success(msg);
       navigate('/');
     } catch {
-      // error toast already shown in context
     } finally {
       setPendingAction(null);
     }
   };
 
   const handleReject = async (comment?: string) => {
+    if (!item) return;
     setPendingAction('reject');
     setActiveModal(null);
     try {
-      await rejectContent(item.id, comment);
-      toast.success('Changes requested. Content returned to creator.');
+      if (isSubMode) {
+        await rejectSubContent(item.id, comment);
+      } else {
+        await rejectContent(item.id, comment);
+      }
+      toast.success('Changes requested. Item returned to creator.');
       navigate('/');
     } catch {
-      // error toast already shown in context
     } finally {
       setPendingAction(null);
     }
   };
 
   const handleDelete = async () => {
+    if (!item) return;
     setPendingAction('delete');
     setActiveModal(null);
     try {
-      await deleteContent(item.id);
+      if (isSubMode) {
+        await deleteSubContent(item.id);
+      } else {
+        await deleteContent(item.id);
+      }
       navigate('/');
     } catch {
-      // error toast already shown in context
     } finally {
       setPendingAction(null);
     }
@@ -209,18 +246,27 @@ export function ContentDetailPage() {
                   {item.title}
                 </h1>
                 <div className="flex items-center gap-2">
-                  <StatusBadge status={item.status} />
-                  {item.status === 'IN_REVIEW' && item.currentReviewStage && (
-                    <span
-                      className={clsx(
-                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border uppercase tracking-wide',
-                        item.currentReviewStage === 1
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-violet-50 text-violet-700 border-violet-200'
-                      )}
-                    >
-                      Stage {item.currentReviewStage} Review
+                  {pendingAction ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 animate-pulse">
+                      <div className="h-2 w-2 rounded-full bg-blue-500 animate-ping" />
+                      Updating...
                     </span>
+                  ) : (
+                    <>
+                      <StatusBadge status={item.status} />
+                      {item.status === 'IN_REVIEW' && item.currentReviewStage && (
+                        <span
+                          className={clsx(
+                            'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold border uppercase tracking-wide',
+                            item.currentReviewStage === 1
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-violet-50 text-violet-700 border-violet-200'
+                          )}
+                        >
+                          Stage {item.currentReviewStage} Review
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -365,10 +411,10 @@ export function ContentDetailPage() {
                     <>
                       <button
                         onClick={() => setActiveModal('approve')}
-                        disabled={!canApprove || !!pendingAction}
+                        disabled={!canFinalize || !!pendingAction}
                         className={clsx(
                           'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
-                          canApprove && !pendingAction
+                          canFinalize && !pendingAction
                             ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         )}
@@ -380,6 +426,8 @@ export function ContentDetailPage() {
                         )}
                         {currentUser.role === 'REVIEWER_L1' ? 'Approve (→ Stage 2)' : 'Approve & Publish'}
                       </button>
+
+
 
                       {/* Reject */}
                       <button
@@ -419,6 +467,42 @@ export function ContentDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Sub-Contents / Parent Reference Section */}
+            {!isSubMode && item.status === 'APPROVED' && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                <SubContentList parent={item} />
+              </div>
+            )}
+
+            {isSubMode && parentItem && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <ArrowLeft className="h-4 w-4 text-blue-500" />
+                  Parent Content Reference
+                </h3>
+                <Link to={`/content/${parentItem.id}`} className="block group">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
+                    <div className="flex items-start gap-3">
+                      <div className="h-12 w-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                        <img 
+                          src={parentItem.image} 
+                          alt="parent" 
+                          className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" 
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                          {parentItem.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{parentItem.description}</p>
+                      </div>
+                      <StatusBadge status={parentItem.status} size="sm" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Approval History */}
             <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">

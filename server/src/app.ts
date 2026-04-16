@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.routes.js';
 import contentRoutes from './routes/content.routes.js';
+import subContentRoutes from './routes/subContent.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +26,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/sub-content', subContentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
