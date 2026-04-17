@@ -215,7 +215,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
           {/* Title */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1.5">
-              Title
+              Title <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -230,7 +230,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
           {/* Description */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1.5">
-              Short Summary
+              Short Description <span className="text-red-500">*</span>
             </label>
             <textarea
               rows={2}
@@ -245,7 +245,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
           {/* Body */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-tight mb-1.5">
-              Detailed Content
+              Detailed Content <span className="text-red-500">*</span>
             </label>
             <textarea
               rows={6}

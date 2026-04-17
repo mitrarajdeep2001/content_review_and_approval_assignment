@@ -10,9 +10,9 @@ import type { AppContextType, AuthUser, ContentItem, FilterState } from '../type
 import { getSession, saveSession, clearSession } from '../utils/auth';
 import toast from 'react-hot-toast';
 import axios from 'axios';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 
-const CONTENT_QUERY_KEY = ['contents'];
+const CONTENT_QUERY_KEY = 'contents';
 const USER_QUERY_KEY = ['user'];
 
 const api = axios.create({
@@ -55,18 +55,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [userData]);
 
-  // ─── Fetch content list with TanStack Query ──────────────────────────────
-  const { data: contents } = useQuery({
-    queryKey: CONTENT_QUERY_KEY,
-    queryFn: async () => {
-      const response = await api.get('/content');
-      return response.data as ContentItem[];
+  // ─── Fetch content list with Infinite Query ──────────────────────────────
+  const {
+    data: contentData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: [CONTENT_QUERY_KEY, filters],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await api.get('/content', {
+        params: {
+          page: pageParam,
+          limit: 10,
+          search: filters.search,
+          status: filters.status,
+        },
+      });
+      return response.data;
     },
-    enabled: !!currentUser, // Only fetch if user is logged in
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    enabled: !!currentUser,
     staleTime: 0,
   });
 
-  const contentList = useMemo(() => contents || [], [contents]);
+  const contentList = useMemo(() => {
+    return contentData?.pages.flatMap((page) => page.items) || [];
+  }, [contentData]);
+
+  const stats = useMemo(() => {
+    return contentData?.pages[0]?.stats || {};
+  }, [contentData]);
 
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
@@ -319,6 +340,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       rejectSubContent,
       filters,
       setFilters,
+      isLoading,
+      isFetchingNextPage,
+      hasNextPage,
+      fetchNextPage,
+      stats,
     }),
     [
       currentUser,
@@ -339,6 +365,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       rejectSubContent,
       filters,
       setFilters,
+      isLoading,
+      isFetchingNextPage,
+      hasNextPage,
+      fetchNextPage,
+      stats,
     ]
   );
 

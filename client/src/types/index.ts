@@ -102,4 +102,11 @@ export interface AppContextType {
   // Filters
   filters: FilterState;
   setFilters: (filters: Partial<FilterState>) => void;
+
+  // Infinite Scroll & Stats
+  isLoading: boolean;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  fetchNextPage: () => void;
+  stats: any;
 }

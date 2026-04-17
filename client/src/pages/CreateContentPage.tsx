@@ -305,7 +305,7 @@ export function CreateContentPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
               <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-1">
                 <AlignLeft className="h-4 w-4 text-gray-400" />
-                Content Body <span className="text-red-500">*</span>
+                Detailed Content <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-gray-400 mb-3">
                 Supports basic markdown: **bold**, ## Heading

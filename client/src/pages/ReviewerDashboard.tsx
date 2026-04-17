@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   ClipboardList,
@@ -8,46 +8,56 @@ import {
   ShieldCheck,
   Inbox,
 } from 'lucide-react';
+import { useInView } from 'react-intersection-observer';
 import { clsx } from 'clsx';
+import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useReviewQueue } from '../hooks/useReviewQueue';
 import { ReviewQueueCard } from '../components/ReviewQueueCard';
 import { EmptyState } from '../components/EmptyState';
+import { SkeletonCard, SkeletonStats } from '../components/SkeletonCard';
 
 type ReviewTab = 'pending' | 'recent';
 
 export function ReviewerDashboard() {
   const currentUser = useRequireAuth();
+  const { 
+    isLoading, 
+    isFetchingNextPage, 
+    hasNextPage, 
+    fetchNextPage, 
+    stats,
+    setFilters
+  } = useApp();
+  
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<ReviewTab>('pending');
 
-  const {
-    filteredItems,
-    pendingCount,
-    approvedByMeCount,
-    rejectedByMeCount,
-  } = useReviewQueue({ search, tab });
+  const { ref, inView } = useInView();
 
-  // ── Keyboard shortcuts ──────────────────────────────────────────────────────
-  // A = switch to pending, R = switch to recent (global), not per-card
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      // Only when not typing in inputs
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      )
-        return;
-      if (e.key === 'p' || e.key === 'P') setTab('pending');
-      if (e.key === 'r' || e.key === 'R') setTab('recent');
-    },
-    []
-  );
+  // Sync search with global filters for server-side filtering
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters({ search });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, setFilters]);
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const {
+    filteredItems,
+  } = useReviewQueue({ search, tab });
+
+  // Use server-side stats
+  const pendingCount = stats.pendingCount || 0;
+  const approvedByMeCount = stats.approvedByMeCount || 0;
+  const rejectedByMeCount = stats.rejectedByMeCount || 0;
+
 
   if (!currentUser) return null;
 
@@ -83,7 +93,6 @@ export function ReviewerDashboard() {
               </p>
             </div>
 
-            {/* Stage indicator */}
             <div
               className={clsx(
                 'hidden sm:flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shrink-0',
@@ -98,56 +107,60 @@ export function ReviewerDashboard() {
         </div>
 
         {/* ── Stats Cards ──────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {[
-            {
-              label: 'Pending Reviews',
-              value: pendingCount,
-              icon: Clock,
-              color: isL1 ? 'text-blue-600' : 'text-violet-600',
-              bg: isL1 ? 'bg-blue-50' : 'bg-violet-50',
-              ring: isL1 ? 'ring-blue-100' : 'ring-violet-100',
-              highlight: true,
-            },
-            {
-              label: 'Approved by You',
-              value: approvedByMeCount,
-              icon: CheckCircle2,
-              color: 'text-emerald-600',
-              bg: 'bg-emerald-50',
-              ring: 'ring-emerald-100',
-              highlight: false,
-            },
-            {
-              label: 'Rejected by You',
-              value: rejectedByMeCount,
-              icon: XCircle,
-              color: 'text-red-500',
-              bg: 'bg-red-50',
-              ring: 'ring-red-100',
-              highlight: false,
-            },
-          ].map(({ label, value, icon: Icon, color, bg, ring, highlight }) => (
-            <div
-              key={label}
-              className={clsx(
-                'bg-white rounded-2xl border border-gray-200 p-5 shadow-sm transition-all',
-                highlight && 'ring-2',
-                highlight && ring
-              )}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium text-gray-500">{label}</span>
-                <div className={clsx('rounded-xl p-2', bg)}>
-                  <Icon className={clsx('h-4 w-4', color)} />
+        {isLoading ? (
+          <SkeletonStats />
+        ) : (
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {[
+              {
+                label: 'Pending Reviews',
+                value: pendingCount,
+                icon: Clock,
+                color: isL1 ? 'text-blue-600' : 'text-violet-600',
+                bg: isL1 ? 'bg-blue-50' : 'bg-violet-50',
+                ring: isL1 ? 'ring-blue-100' : 'ring-violet-100',
+                highlight: true,
+              },
+              {
+                label: 'Approved by You',
+                value: approvedByMeCount,
+                icon: CheckCircle2,
+                color: 'text-emerald-600',
+                bg: 'bg-emerald-50',
+                ring: 'ring-emerald-100',
+                highlight: false,
+              },
+              {
+                label: 'Rejected by You',
+                value: rejectedByMeCount,
+                icon: XCircle,
+                color: 'text-red-500',
+                bg: 'bg-red-50',
+                ring: 'ring-red-100',
+                highlight: false,
+              },
+            ].map(({ label, value, icon: Icon, color, bg, ring, highlight }) => (
+              <div
+                key={label}
+                className={clsx(
+                  'bg-white rounded-2xl border border-gray-200 p-5 shadow-sm transition-all',
+                  highlight && 'ring-2',
+                  highlight && ring
+                )}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-gray-500">{label}</span>
+                  <div className={clsx('rounded-xl p-2', bg)}>
+                    <Icon className={clsx('h-4 w-4', color)} />
+                  </div>
+                </div>
+                <div className={clsx('text-3xl font-bold', highlight ? color : 'text-gray-900')}>
+                  {value}
                 </div>
               </div>
-              <div className={clsx('text-3xl font-bold', highlight ? color : 'text-gray-900')}>
-                {value}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* ── Search & Filter Tabs ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6">
@@ -212,20 +225,6 @@ export function ReviewerDashboard() {
           </div>
         </div>
 
-        {/* ── Keyboard shortcut hint ───────────────────────────────────────────── */}
-        <div className="flex items-center gap-4 mb-5 text-xs text-gray-400">
-          <span>
-            Keyboard:{' '}
-            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-600">P</kbd>{' '}
-            Pending ·{' '}
-            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-600">R</kbd>{' '}
-            Recent · On card:{' '}
-            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-600">A</kbd>{' '}
-            Approve ·{' '}
-            <kbd className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-600">R</kbd>{' '}
-            Reject
-          </span>
-        </div>
 
         {/* ── Section heading ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between mb-4">
@@ -235,7 +234,7 @@ export function ReviewerDashboard() {
             </h2>
             {filteredItems.length > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">
-                {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+                Showing <span className="font-semibold">{filteredItems.length}</span> item{filteredItems.length !== 1 ? 's' : ''}
                 {search && ` matching "${search}"`}
               </p>
             )}
@@ -257,7 +256,11 @@ export function ReviewerDashboard() {
         </div>
 
         {/* ── Content Grid ─────────────────────────────────────────────────────── */}
-        {filteredItems.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : filteredItems.length === 0 ? (
           <EmptyState
             title={
               tab === 'pending'
@@ -288,6 +291,19 @@ export function ReviewerDashboard() {
                 isRecentlyReviewed={tab === 'recent'}
               />
             ))}
+            
+            {/* Load More Trigger */}
+            {(hasNextPage || isFetchingNextPage) && (
+              <div ref={ref} className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
+                {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
+              </div>
+            )}
+            
+            {!hasNextPage && filteredItems.length > 5 && (
+              <div className="col-span-full text-center py-10 text-gray-400 text-sm">
+                You've reached the end of the queue.
+              </div>
+            )}
           </div>
         )}
       </div>

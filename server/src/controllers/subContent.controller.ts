@@ -17,7 +17,7 @@ export const createSubContent = async (req: Request, res: Response) => {
     const body = { ...req.body };
     
     if (req.file) {
-      body.image = `/uploads/${req.file.filename}`;
+      body.image = req.file.path;
     }
 
     const item = await subContentService.createSubContent(req.params.parentId, body, user.id);
@@ -33,7 +33,7 @@ export const updateSubContent = async (req: Request, res: Response) => {
     const body = { ...req.body };
 
     if (req.file) {
-      body.image = `/uploads/${req.file.filename}`;
+      body.image = req.file.path;
     }
 
     const item = await subContentService.updateSubContent(req.params.id, body, user.id);

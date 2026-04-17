@@ -17,7 +17,15 @@ function getSessionUser(req: Request) {
 export const getContents = async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const data = await contentService.fetchAllContents(user);
+    const { page, limit, search, status } = req.query;
+    
+    const data = await contentService.fetchAllContents(user, {
+      page: page ? parseInt(page as string) : 1,
+      limit: limit ? parseInt(limit as string) : 10,
+      search: search as string,
+      status: status as string,
+    });
+    
     res.status(200).json(data);
   } catch (error) {
     console.error('getContents error', error);
@@ -37,8 +45,7 @@ export const createContent = async (req: Request, res: Response) => {
     const { title, description, body, status } = req.body;
     let image = req.body.image;
     if (req.file) {
-      const host = req.protocol + '://' + req.get('host');
-      image = `${host}/uploads/${req.file.filename}`;
+      image = req.file.path;
     }
 
     const initialStatus = status === 'IN_REVIEW' ? 'IN_REVIEW' : 'DRAFT';
@@ -87,8 +94,7 @@ export const updateContent = async (req: Request, res: Response) => {
     const { title, description, body } = req.body;
     let image = req.body.image;
     if (req.file) {
-      const host = req.protocol + '://' + req.get('host');
-      image = `${host}/uploads/${req.file.filename}`;
+      image = req.file.path;
     }
 
     const updated = await contentService.updateContent(

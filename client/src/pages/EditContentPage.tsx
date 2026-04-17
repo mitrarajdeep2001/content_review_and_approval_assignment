@@ -371,7 +371,7 @@ export function EditContentPage() {
           {/* Body */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <label className="block text-sm font-semibold text-gray-800 mb-1">
-              Content Body <span className="text-red-500">*</span>
+              Detailed Content <span className="text-red-500">*</span>
             </label>
             <p className="text-xs text-gray-400 mb-3">Supports basic markdown: **bold**, ## Heading</p>
             <textarea
