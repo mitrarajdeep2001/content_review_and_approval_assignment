@@ -17,6 +17,10 @@
     color: #111827;
   }
 
+  button {
+    cursor: pointer;
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;

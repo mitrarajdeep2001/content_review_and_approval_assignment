@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import type { ReviewQueueItem } from '../hooks/useReviewQueue';
 import type { Role } from '../types';
 import { ConfirmModal } from './ConfirmModal';
-import { formatRelative } from '../utils/helpers';
+import { formatRelative, getImageUrl } from '../utils/helpers';
 import { useApp } from '../store/AppContext';
 
 interface Props {
@@ -69,7 +69,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
       } else {
         await rejectContent(item.id, comment);
       }
-      toast.error('Changes requested. Returned to creator.');
+      toast.success('Changes requested. Returned to creator.');
     } catch (error) {
       // Error is handled in context/toast
     } finally {
@@ -95,7 +95,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
         {/* Thumbnail */}
         <div className="relative h-44 overflow-hidden bg-gray-100 flex-shrink-0">
           <img
-            src={item.image}
+            src={getImageUrl(item.image)}
             alt={item.title}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {

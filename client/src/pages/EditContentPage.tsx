@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, AlertTriangle, Image as ImageIcon, Type, AlignLeft } from 'lucide-react';
+import { ArrowLeft, Save, AlertTriangle, Image as ImageIcon, Type, AlignLeft, Eye } from 'lucide-react';
 
 const PLACEHOLDER_IMAGES = [
   'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60',
@@ -32,6 +32,7 @@ export function EditContentPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -151,7 +152,7 @@ export function EditContentPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -181,6 +182,25 @@ export function EditContentPage() {
           </button>
         </div>
 
+        {/* Tab Toggle */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+          {(['edit', 'preview'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={clsx(
+                'flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors capitalize',
+                activeTab === tab
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {tab === 'edit' ? <Type className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              {tab}
+            </button>
+          ))}
+        </div>
+
         {/* Rejection feedback banner */}
         {rejectionEntry?.comment && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex gap-3">
@@ -193,7 +213,8 @@ export function EditContentPage() {
           </div>
         )}
 
-        <div className="space-y-5">
+        {activeTab === 'edit' ? (
+          <div className="space-y-5">
           {/* Image Selection */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-4">
@@ -387,7 +408,70 @@ export function EditContentPage() {
               Save Changes
             </button>
           </div>
-        </div>
+          </div>
+        ) : (
+          /* Preview Tab */
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            {/* Cover image */}
+            <div className="h-56">
+              <img
+                src={imageFile ? URL.createObjectURL(imageFile) : (customImageUrl || form.image)}
+                alt="Preview"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGES[0];
+                }}
+              />
+            </div>
+            <div className="p-8">
+              {form.title ? (
+                <h1 className="text-2xl font-bold text-gray-900 mb-3">{form.title}</h1>
+              ) : (
+                <div className="h-8 bg-gray-100 rounded-lg w-3/4 mb-3" />
+              )}
+              {form.description && (
+                <p className="text-gray-500 text-sm italic border-l-4 border-gray-100 pl-4 mb-6">
+                  {form.description}
+                </p>
+              )}
+              {form.body ? (
+                <div className="space-y-3">
+                  {form.body.split('\n\n').map((paragraph, idx) => {
+                    if (!paragraph.trim()) return null;
+                    if (paragraph.startsWith('## ')) {
+                      return (
+                        <h2 key={idx} className="text-base font-bold text-gray-800 mt-5 mb-1">
+                          {paragraph.replace('## ', '')}
+                        </h2>
+                      );
+                    }
+                    const parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
+                    return (
+                      <p key={idx} className="text-sm text-gray-600 leading-relaxed">
+                        {parts.map((part, i) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return (
+                              <strong key={i} className="font-semibold text-gray-800">
+                                {part.replace(/\*\*/g, '')}
+                              </strong>
+                            );
+                          }
+                          return <span key={i}>{part}</span>;
+                        })}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-100 rounded w-full" />
+                  <div className="h-4 bg-gray-100 rounded w-5/6" />
+                  <div className="h-4 bg-gray-100 rounded w-4/6" />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

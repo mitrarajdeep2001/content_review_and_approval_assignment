@@ -68,7 +68,7 @@ export function ReviewerDashboard() {
               <div className="flex items-center gap-3 mb-1">
                 <div
                   className={clsx(
-                    'flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br shadow-sm',
+                    'flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br shadow-sm',
                     stageAccent
                   )}
                 >
@@ -166,7 +166,7 @@ export function ReviewerDashboard() {
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1.5 p-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5 p-3 shrink-0">
               <button
                 id="tab-pending"
                 onClick={() => setTab('pending')}

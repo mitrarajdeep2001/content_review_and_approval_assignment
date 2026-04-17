@@ -95,7 +95,7 @@ export function ContentListPage() {
 
             {/* Status filter */}
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <Filter className="h-4 w-4 text-gray-400 shrink-0" />
               {STATUS_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}

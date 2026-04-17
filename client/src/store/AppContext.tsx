@@ -10,6 +10,10 @@ import type { AppContextType, AuthUser, ContentItem, FilterState } from '../type
 import { getSession, saveSession, clearSession } from '../utils/auth';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
+const CONTENT_QUERY_KEY = ['contents'];
+const USER_QUERY_KEY = ['user'];
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -19,42 +23,57 @@ const api = axios.create({
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getSession());
-  const [contentList, setContentList] = useState<ContentItem[]>([]);
-  const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
-
-  // ─── Fetch content list ────────────────────────────────────────────────────
-  const refreshContents = useCallback(async () => {
-    try {
-      const response = await api.get('/content');
-      setContentList(response.data);
-    } catch (error) {
-      console.error('Failed to fetch contents:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshContents();
-  }, [refreshContents, currentUser]);
-
-  // ─── Auth ──────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const fetchMe = async () => {
+  const queryClient = useQueryClient();
+  
+  // ─── Auth State with TanStack Query ─────────────────────────────────────
+  const { data: userData } = useQuery({
+    queryKey: USER_QUERY_KEY,
+    queryFn: async () => {
       try {
         const response = await api.get('/auth/me');
-        setCurrentUser(response.data);
+        return response.data as AuthUser;
       } catch {
-        setCurrentUser(null);
+        return null;
       }
-    };
-    fetchMe();
-  }, []);
+    },
+    staleTime: 0,
+    retry: false,
+  });
+
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => getSession());
+  const [filters, setFiltersState] = useState<FilterState>({ status: 'ALL', search: '' });
+
+  // Keep currentUser state in sync with query data
+  useEffect(() => {
+    if (userData !== undefined) {
+      setCurrentUser(userData);
+      if (userData) {
+        saveSession(userData);
+      } else {
+        clearSession();
+      }
+    }
+  }, [userData]);
+
+  // ─── Fetch content list with TanStack Query ──────────────────────────────
+  const { data: contents } = useQuery({
+    queryKey: CONTENT_QUERY_KEY,
+    queryFn: async () => {
+      const response = await api.get('/content');
+      return response.data as ContentItem[];
+    },
+    enabled: !!currentUser, // Only fetch if user is logged in
+    staleTime: 0,
+  });
+
+  const contentList = useMemo(() => contents || [], [contents]);
 
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
       const response = await api.post('/auth/login', credentials);
       setCurrentUser(response.data);
       saveSession(response.data);
+      queryClient.setQueryData(USER_QUERY_KEY, response.data);
       toast.success(`Welcome back, ${response.data.name}!`);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed';
@@ -67,13 +86,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post('/auth/logout');
       clearSession();
-      setCurrentUser(null);
-      setContentList([]);
+      queryClient.setQueryData(USER_QUERY_KEY, null);
+      queryClient.setQueryData(CONTENT_QUERY_KEY, []);
       toast.success('Logged out successfully');
     } catch {
       toast.error('Logout failed');
     }
-  }, []);
+  }, [queryClient]);
 
   // ─── Filters ───────────────────────────────────────────────────────────────
   const setFilters = useCallback((partial: Partial<FilterState>) => {
@@ -89,14 +108,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         const newItem = response.data;
-        setContentList((prev) => [newItem, ...prev]);
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
         return newItem;
       } catch (error) {
         toast.error('Failed to create content');
         throw error;
       }
     },
-    [currentUser]
+    [currentUser, queryClient]
   );
 
   // ─── Update Content ────────────────────────────────────────────────────────
@@ -111,19 +130,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await api.put(`/content/${id}`, formData, {
+        await api.put(`/content/${id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        const updatedItem = response.data;
-        setContentList((prev) =>
-          prev.map((c) => (c.id !== id ? c : { ...c, ...updatedItem }))
-        );
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error) {
         toast.error('Failed to update content');
         throw error;
       }
     },
-    [currentUser, contentList]
+    [currentUser, contentList, queryClient]
   );
 
   // ─── Delete Content ────────────────────────────────────────────────────────
@@ -139,14 +155,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       try {
         await api.delete(`/content/${id}`);
-        setContentList((prev) => prev.filter((c) => c.id !== id));
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
         toast.success('Content deleted');
       } catch (error) {
         toast.error('Failed to delete content');
         throw error;
       }
     },
-    [currentUser, contentList]
+    [currentUser, contentList, queryClient]
   );
 
   // ─── Submit Content ────────────────────────────────────────────────────────
@@ -156,14 +172,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       try {
         await api.patch(`/content/${id}/submit`);
         // Refetch the full list so history & status are fresh from DB
-        await refreshContents();
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         const message = error.response?.data?.message || 'Failed to submit content';
         toast.error(message);
         throw error;
       }
     },
-    [currentUser, refreshContents]
+    [currentUser, queryClient]
   );
 
   // ─── Approve Content ───────────────────────────────────────────────────────
@@ -171,19 +187,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (id: string, comment?: string) => {
       if (!currentUser) return;
       try {
-        const response = await api.patch(`/content/${id}/approve`, { comment });
-        const updatedItem: ContentItem = response.data;
-        // Replace the item in state with the fresh version (includes updated history)
-        setContentList((prev) =>
-          prev.map((c) => (c.id !== id ? c : updatedItem))
-        );
+        await api.patch(`/content/${id}/approve`, { comment });
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         const message = error.response?.data?.message || 'Failed to approve content';
         toast.error(message);
         throw error;
       }
     },
-    [currentUser]
+    [currentUser, queryClient]
   );
 
   // ─── Reject Content ────────────────────────────────────────────────────────
@@ -191,99 +203,100 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (id: string, comment?: string) => {
       if (!currentUser) return;
       try {
-        const response = await api.patch(`/content/${id}/reject`, { comment });
-        const updatedItem: ContentItem = response.data;
-        setContentList((prev) =>
-          prev.map((c) => (c.id !== id ? c : updatedItem))
-        );
+        await api.patch(`/content/${id}/reject`, { comment });
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         const message = error.response?.data?.message || 'Failed to reject content';
         toast.error(message);
         throw error;
       }
     },
-    [currentUser]
+    [currentUser, queryClient]
   );
 
   // ─── Sub-Content Actions ───────────────────────────────────────────────────
   const createSubContent = useCallback(
     async (parentId: string, data: FormData) => {
       try {
-        const response = await api.post(`/content/${parentId}/sub-content`, data);
-        await refreshContents();
+        const response = await api.post(`/content/${parentId}/sub-content`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
         return response.data;
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to create sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const updateSubContent = useCallback(
     async (id: string, data: FormData) => {
       try {
-        await api.put(`/sub-content/${id}`, data);
-        await refreshContents();
+        await api.put(`/sub-content/${id}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to update sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const deleteSubContent = useCallback(
     async (id: string) => {
       try {
         await api.delete(`/sub-content/${id}`);
-        await refreshContents();
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
         toast.success('Sub-content deleted');
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to delete sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const submitSubContent = useCallback(
     async (id: string) => {
       try {
         await api.patch(`/sub-content/${id}/submit`);
-        await refreshContents();
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to submit sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const approveSubContent = useCallback(
     async (id: string, comment?: string) => {
       try {
         await api.patch(`/sub-content/${id}/approve`, { comment });
-        await refreshContents();
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to approve sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const rejectSubContent = useCallback(
     async (id: string, comment?: string) => {
       try {
         await api.patch(`/sub-content/${id}/reject`, { comment });
-        await refreshContents();
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to reject sub-content');
         throw error;
       }
     },
-    [refreshContents]
+    [queryClient]
   );
 
   const value = useMemo<AppContextType>(

@@ -3,6 +3,7 @@ import { X, Save, Image as ImageIcon, Send, Upload } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import type { SubContent } from '../types';
 import { clsx } from 'clsx';
+import { getImageUrl } from '../utils/helpers';
 import toast from 'react-hot-toast';
 
 const PLACEHOLDER_IMAGES = [
@@ -67,7 +68,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
 
   const currentPreviewImage = imageFile 
     ? URL.createObjectURL(imageFile) 
-    : (customImageUrl || selectedPreset || PLACEHOLDER_IMAGES[0]);
+    : getImageUrl(customImageUrl || selectedPreset);
 
   const handleSubmit = async (submitForReview: boolean) => {
     if (!title.trim() || !description.trim() || !body.trim()) {

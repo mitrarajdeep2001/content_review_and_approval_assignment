@@ -5,6 +5,7 @@ import type { SubContent, AuthUser } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { useApp } from '../store/AppContext';
 import { ConfirmModal } from './ConfirmModal';
+import { getImageUrl } from '../utils/helpers';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
@@ -50,7 +51,7 @@ export function SubContentCard({ item, currentUser, onEdit }: Props) {
         {item.image && (
           <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
             <img 
-              src={item.image} 
+              src={getImageUrl(item.image)} 
               alt={item.title} 
               className="w-full h-full object-cover"
               onError={(e) => (e.currentTarget.style.display = 'none')}

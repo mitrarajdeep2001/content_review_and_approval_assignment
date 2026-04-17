@@ -21,7 +21,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { WorkflowProgress } from '../components/WorkflowProgress';
 import { ApprovalTimeline } from '../components/ApprovalTimeline';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { formatDate } from '../utils/helpers';
+import { formatDate, getImageUrl } from '../utils/helpers';
 import { SubContentList } from '../components/SubContentList';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
@@ -203,15 +203,15 @@ export function ContentDetailPage() {
         />
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Back button */}
         <Link
-          to="/"
+          to={isSubMode && parentItem ? `/content/${parentItem.id}` : "/"}
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6 group"
         >
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-          Back to Dashboard
+          {isSubMode && parentItem ? "Back to Parent Content" : "Back to Dashboard"}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -221,7 +221,7 @@ export function ContentDetailPage() {
             {/* Hero Image */}
             <div className="relative h-64 rounded-2xl overflow-hidden shadow-md bg-gray-200">
               <img
-                src={item.image}
+                src={getImageUrl(item.image)}
                 alt={item.title}
                 className="h-full w-full object-cover"
                 onError={(e) => {
@@ -477,16 +477,21 @@ export function ContentDetailPage() {
 
             {isSubMode && parentItem && (
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4 text-blue-500" />
-                  Parent Content Reference
-                </h3>
+                <Link 
+                  to={`/content/${parentItem.id}`}
+                  className="flex items-center gap-2 mb-4 group/header p-1 -m-1 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  <ArrowLeft className="h-4 w-4 text-blue-500 group-hover/header:-translate-x-0.5 transition-transform" />
+                  <h3 className="text-sm font-semibold text-gray-800 group-hover/header:text-blue-700 transition-colors">
+                    Parent Content Reference
+                  </h3>
+                </Link>
                 <Link to={`/content/${parentItem.id}`} className="block group">
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
                     <div className="flex items-start gap-3">
                       <div className="h-12 w-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
                         <img 
-                          src={parentItem.image} 
+                          src={getImageUrl(parentItem.image)} 
                           alt="parent" 
                           className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all" 
                         />

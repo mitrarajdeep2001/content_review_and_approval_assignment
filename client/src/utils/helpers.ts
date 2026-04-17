@@ -36,3 +36,22 @@ export function sleep(ms: number): Promise<void> {
 export function truncate(str: string, len: number): string {
   return str.length > len ? str.slice(0, len) + '…' : str;
 }
+
+export function getImageUrl(path: string | null | undefined): string {
+  const placeholder = 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60';
+  if (!path) return placeholder;
+  
+  // If it's already a full URL or blob, return as is
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) {
+    return path;
+  }
+  
+  // If it starts with /uploads, prepend the API base URL (removing the /api suffix)
+  if (path.startsWith('/uploads')) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+    const host = baseUrl.replace(/\/api\/?$/, '');
+    return `${host}${path}`;
+  }
+  
+  return path;
+}

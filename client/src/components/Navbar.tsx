@@ -3,7 +3,6 @@ import { PlusCircle, LogOut, LayoutDashboard, Zap } from 'lucide-react';
 import { useApp } from '../store/AppContext';
 import { RoleBadge } from './RoleBadge';
 import { clsx } from 'clsx';
-import toast from 'react-hot-toast';
 import { useState } from 'react';
 
 export function Navbar() {

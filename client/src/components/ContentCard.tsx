@@ -3,7 +3,7 @@ import { Eye, Edit2, Lock } from 'lucide-react';
 import type { ContentItem } from '../types';
 import type { Role } from '../types';
 import { StatusBadge } from './StatusBadge';
-import { truncate, formatRelative } from '../utils/helpers';
+import { truncate, formatRelative, getImageUrl } from '../utils/helpers';
 import { clsx } from 'clsx';
 
 interface Props {
@@ -20,7 +20,7 @@ export function ContentCard({ item, currentRole }: Props) {
       {/* Thumbnail */}
       <div className="relative h-44 overflow-hidden bg-gray-100">
         <img
-          src={item.image}
+          src={getImageUrl(item.image)}
           alt={item.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
