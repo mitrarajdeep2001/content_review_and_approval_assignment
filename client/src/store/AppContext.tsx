@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 
-const CONTENT_QUERY_KEY = 'contents';
+const CONTENT_QUERY_KEY = ['contents'];
 const USER_QUERY_KEY = ['user'];
 
 const api = axios.create({
@@ -63,7 +63,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     isFetchingNextPage,
     isLoading,
   } = useInfiniteQuery({
-    queryKey: [CONTENT_QUERY_KEY, filters],
+    queryKey: [...CONTENT_QUERY_KEY, filters],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await api.get('/content', {
         params: {
@@ -71,6 +71,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           limit: 10,
           search: filters.search,
           status: filters.status,
+          tab: filters.tab,
         },
       });
       return response.data;
@@ -86,7 +87,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [contentData]);
 
   const stats = useMemo(() => {
-    return contentData?.pages[0]?.stats || {};
+    // Use the latest page's stats so they stay fresh after refetches
+    const pages = contentData?.pages;
+    return pages?.[pages.length - 1]?.stats || pages?.[0]?.stats || {};
   }, [contentData]);
 
   const login = useCallback(async (credentials: { email: string; password: string }) => {
@@ -108,7 +111,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await api.post('/auth/logout');
       clearSession();
       queryClient.setQueryData(USER_QUERY_KEY, null);
-      queryClient.setQueryData(CONTENT_QUERY_KEY, []);
+      queryClient.setQueryData(CONTENT_QUERY_KEY, { pages: [], pageParams: [] });
       toast.success('Logged out successfully');
     } catch {
       toast.error('Logout failed');

@@ -80,7 +80,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
 
   // Determine correct Link URL
   const detailUrl = isSubContent ? `/sub-content/${item.id}` : `/content/${item.id}`;
-  const creator = isSubContent ? (item as any).creatorName || 'Unknown' : item.createdBy;
+  const creator = isSubContent ? (item as any).creatorName || 'Unknown' : (item as any).creatorName || item.createdBy;
 
   return (
     <>

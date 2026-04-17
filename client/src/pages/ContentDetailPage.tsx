@@ -280,7 +280,7 @@ export function ContentDetailPage() {
               <div className="flex flex-wrap gap-4 text-xs text-gray-400 mb-5">
                 <div className="flex items-center gap-1.5">
                   <User className="h-3.5 w-3.5" />
-                  <span>{item.createdBy}</span>
+                  <span>{item.creatorName || item.createdBy}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />

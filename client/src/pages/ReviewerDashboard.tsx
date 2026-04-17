@@ -12,6 +12,7 @@ import { useInView } from 'react-intersection-observer';
 import { clsx } from 'clsx';
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { useDebounce } from '../hooks/useDebounce';
 import { useReviewQueue } from '../hooks/useReviewQueue';
 import { ReviewQueueCard } from '../components/ReviewQueueCard';
 import { EmptyState } from '../components/EmptyState';
@@ -32,16 +33,14 @@ export function ReviewerDashboard() {
   
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<ReviewTab>('pending');
+  const debouncedSearch = useDebounce(search, 300);
 
   const { ref, inView } = useInView();
 
-  // Sync search with global filters for server-side filtering
+  // Sync search and tab with global filters for server-side filtering
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setFilters({ search });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, setFilters]);
+    setFilters({ search: debouncedSearch, tab });
+  }, [debouncedSearch, tab, setFilters]);
 
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
@@ -230,7 +229,7 @@ export function ReviewerDashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold text-gray-700">
-              {tab === 'pending' ? 'Awaiting Your Decision' : 'Recently Reviewed (Last 5)'}
+              {tab === 'pending' ? 'Awaiting Your Decision' : 'Recently Reviewed'}
             </h2>
             {filteredItems.length > 0 && (
               <p className="text-xs text-gray-400 mt-0.5">
@@ -278,7 +277,7 @@ export function ReviewerDashboard() {
                   : `You have no pending ${stageLabel} reviews right now.`
                 : search
                   ? 'Try adjusting your search.'
-                  : 'Content you review will appear here (last 5 items).'
+                  : 'Content you review will appear here.'
             }
           />
         ) : (

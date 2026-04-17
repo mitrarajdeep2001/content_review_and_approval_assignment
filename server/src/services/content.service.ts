@@ -4,14 +4,7 @@ import { desc, eq, or, and, like, sql, inArray } from 'drizzle-orm';
 import { workflowHelper, ReviewAction } from './workflow.helper.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type ReviewAction =
-  | 'CREATED'
-  | 'SUBMITTED'
-  | 'APPROVED_L1'
-  | 'APPROVED_L2'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'EDITED';
+
 
 export const contentService = {
   // ─── Fetch All (Paginated) ──────────────────────────────────────────────────
@@ -20,40 +13,88 @@ export const contentService = {
     limit?: number; 
     search?: string; 
     status?: string;
+    tab?: string;
   } = {}) {
-    const { page = 1, limit = 10, search, status } = options;
+    const { page = 1, limit = 10, search, status, tab } = options;
     const offset = (page - 1) * limit;
 
-    // 1. Build Page Filter
+    // 1. Build Base access Filter
     let baseFilter;
     if (user.role === 'CREATOR') {
       baseFilter = or(eq(contents.createdBy, user.id), eq(contents.status, 'APPROVED'));
     } else {
+      // Reviewers can generally see anything in review or approved
       baseFilter = or(eq(contents.status, 'IN_REVIEW'), eq(contents.status, 'APPROVED'));
     }
 
     const filters = [baseFilter];
+
+    // 2. Tab-specific filtering for Reviewers
+    if (user.role !== 'CREATOR' && tab) {
+      const stage = user.role === 'REVIEWER_L1' ? 1 : 2;
+      
+      if (tab === 'pending') {
+        // Pending: either the parent is at my stage, OR at least one sub-content is at my stage
+        filters.push(or(
+          and(eq(contents.status, 'IN_REVIEW'), eq(contents.currentReviewStage, stage)),
+          sql`exists (select 1 from ${subContents} sc where sc.parent_content_id = ${contents.id} and sc.status = 'IN_REVIEW' and sc.current_review_stage = ${stage})`
+        ));
+      } else if (tab === 'recent') {
+        const reviewActions = ['APPROVED_L1', 'APPROVED_L2', 'APPROVED', 'REJECTED'];
+        // Recent: current user has a record in approval_logs for either parent or any sub-content
+        filters.push(sql`exists (
+          select 1 from ${approvalLogs} al 
+          where al.reviewer_id = ${user.id} 
+          and al.action in ${reviewActions}
+          and (al.content_id = ${contents.id} or al.sub_content_id in (select id from ${subContents} sc where sc.parent_content_id = ${contents.id}))
+        )`);
+      }
+    }
+
     if (status && status !== 'ALL') {
       filters.push(eq(contents.status, status as any));
     }
     if (search) {
-      filters.push(or(
-        like(contents.title, `%${search}%`),
-        like(contents.description, `%${search}%`)
-      ));
+      const cleanSearch = search
+        .replace(/[()!:&|]/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(word => `${word.startsWith('-') ? word.substring(1) : word}:*`)
+        .join(' & ');
+        
+      if (cleanSearch) {
+        filters.push(
+          sql`to_tsvector('simple', coalesce(${contents.title}, '') || ' ' || coalesce(${contents.description}, '')) @@ to_tsquery('simple', ${cleanSearch})`
+        );
+      }
     }
 
     const finalFilter = and(...filters);
+
+    // Order by latest review if in recent tab, otherwise by creation
+    let orderBy = desc(contents.createdAt);
+    if (tab === 'recent') {
+      orderBy = sql`(
+        select max(al.created_at) from ${approvalLogs} al 
+        where al.reviewer_id = ${user.id} 
+        and (al.content_id = ${contents.id} or al.sub_content_id in (select id from ${subContents} sc where sc.parent_content_id = ${contents.id}))
+      ) desc` as any;
+    }
 
     // 2. Get Count and Paginated Items
     const [countResult] = await db.select({ count: sql<number>`count(*)` }).from(contents).where(finalFilter);
     const total = Number(countResult?.count || 0);
 
     const pageContents = await db
-      .select()
+      .select({
+        content: contents,
+        creatorName: users.name,
+      })
       .from(contents)
+      .leftJoin(users, eq(contents.createdBy, users.id))
       .where(finalFilter)
-      .orderBy(desc(contents.createdAt))
+      .orderBy(orderBy)
       .limit(limit)
       .offset(offset);
 
@@ -61,7 +102,7 @@ export const contentService = {
       return { items: [], total, page, limit, hasMore: false, stats: await this.getStats(user) };
     }
 
-    const contentIds = pageContents.map((c) => c.id);
+    const contentIds = pageContents.map((row) => row.content.id);
 
     // 3. Fetch Sub-resources ONLY for target items
     const pSubContents = db
@@ -100,7 +141,8 @@ export const contentService = {
     const [allSubContents, allLogs] = await Promise.all([pSubContents, pLogs]);
 
     // 4. Transform data
-    const items = pageContents.map((c) => {
+    const items = pageContents.map((row) => {
+      const c = row.content;
       const history = allLogs
         .filter((log) => log.contentId === c.id)
         .map((log) => ({
@@ -113,13 +155,13 @@ export const contentService = {
         }));
 
       const children = allSubContents
-        .filter((row) => row.sub.parentId === c.id)
-        .map((row) => ({
-          ...row.sub,
-          creatorName: row.creatorName,
-          parentTitle: row.parentTitle,
+        .filter((r) => r.sub.parentId === c.id)
+        .map((r) => ({
+          ...r.sub,
+          creatorName: r.creatorName,
+          parentTitle: r.parentTitle,
           history: allLogs
-            .filter((log) => log.subContentId === row.sub.id)
+            .filter((log) => log.subContentId === r.sub.id)
             .map((log) => ({
               id: log.id,
               action: log.action ?? log.status,
@@ -135,7 +177,7 @@ export const contentService = {
         approved: children.filter((sc) => sc.status === 'APPROVED').length,
       };
 
-      return { ...c, history, subContents: children, subContentProgress };
+      return { ...c, creatorName: row.creatorName, history, subContents: children, subContentProgress };
     });
 
     const stats = await this.getStats(user);
@@ -164,27 +206,72 @@ export const contentService = {
         .where(eq(contents.createdBy, user.id));
       return counts;
     } else {
-      // Reviewer stats (simplified for now, can be expanded)
       const isL1 = user.role === 'REVIEWER_L1';
       const stage = isL1 ? 1 : 2;
 
-      const [pendingCount] = await db
+      // Pending: parent contents at my stage
+      const [pendingParents] = await db
         .select({ count: sql<number>`count(*)` })
         .from(contents)
         .where(and(eq(contents.status, 'IN_REVIEW'), eq(contents.currentReviewStage, stage)));
 
-      const [reviewedByMe] = await db
-        .select({
-          approved: sql<number>`count(distinct content_id) filter (where action in ('APPROVED_L1', 'APPROVED_L2', 'APPROVED'))`,
-          rejected: sql<number>`count(distinct content_id) filter (where action = 'REJECTED')`,
-        })
+      // Pending: sub-contents at my stage
+      const [pendingSubs] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(subContents)
+        .where(and(eq(subContents.status, 'IN_REVIEW'), eq(subContents.currentReviewStage, stage)));
+
+      // Approved by me: count separately for parent contents (content_id not null) 
+      // and sub-contents (sub_content_id not null, content_id null)
+      const [approvedParents] = await db
+        .select({ count: sql<number>`count(distinct content_id)` })
         .from(approvalLogs)
-        .where(eq(approvalLogs.reviewerId, user.id));
+        .where(
+          and(
+            eq(approvalLogs.reviewerId, user.id),
+            sql`action in ('APPROVED_L1', 'APPROVED_L2', 'APPROVED')`,
+            sql`content_id is not null`
+          )
+        );
+
+      const [approvedSubs] = await db
+        .select({ count: sql<number>`count(distinct sub_content_id)` })
+        .from(approvalLogs)
+        .where(
+          and(
+            eq(approvalLogs.reviewerId, user.id),
+            sql`action in ('APPROVED_L1', 'APPROVED_L2', 'APPROVED')`,
+            sql`sub_content_id is not null`
+          )
+        );
+
+      // Rejected by me: same split
+      const [rejectedParents] = await db
+        .select({ count: sql<number>`count(distinct content_id)` })
+        .from(approvalLogs)
+        .where(
+          and(
+            eq(approvalLogs.reviewerId, user.id),
+            sql`action = 'REJECTED'`,
+            sql`content_id is not null`
+          )
+        );
+
+      const [rejectedSubs] = await db
+        .select({ count: sql<number>`count(distinct sub_content_id)` })
+        .from(approvalLogs)
+        .where(
+          and(
+            eq(approvalLogs.reviewerId, user.id),
+            sql`action = 'REJECTED'`,
+            sql`sub_content_id is not null`
+          )
+        );
 
       return {
-        pendingCount: Number(pendingCount?.count || 0),
-        approvedByMeCount: Number(reviewedByMe?.approved || 0),
-        rejectedByMeCount: Number(reviewedByMe?.rejected || 0),
+        pendingCount: Number(pendingParents?.count || 0) + Number(pendingSubs?.count || 0),
+        approvedByMeCount: Number(approvedParents?.count || 0) + Number(approvedSubs?.count || 0),
+        rejectedByMeCount: Number(rejectedParents?.count || 0) + Number(rejectedSubs?.count || 0),
       };
     }
   },

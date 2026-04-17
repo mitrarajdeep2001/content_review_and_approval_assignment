@@ -53,6 +53,7 @@ export interface ContentItem {
   isLocked: boolean;
   currentReviewStage?: 1 | 2 | null;
   createdBy: string;
+  creatorName?: string;
   createdAt: string;
   updatedAt: string;
   history: ApprovalHistoryEntry[];
@@ -73,6 +74,7 @@ export interface AuthUser {
 export interface FilterState {
   status: ContentStatus | 'ALL';
   search: string;
+  tab?: 'pending' | 'recent' | 'all';
 }
 
 // ─── Context Types ────────────────────────────────────────────────────────────

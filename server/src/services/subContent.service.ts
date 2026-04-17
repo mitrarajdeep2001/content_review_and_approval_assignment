@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { subContents, contents, users, approvalLogs, NewSubContent } from '../db/schema.js';
-import { eq, and, or } from 'drizzle-orm';
+import { eq, and, or, inArray } from 'drizzle-orm';
 import { workflowHelper, ReviewAction } from './workflow.helper.js';
 
 export const subContentService = {
@@ -26,34 +26,42 @@ export const subContentService = {
 
     const list = await db.select().from(subContents).where(filter);
     
-    // Enrich with history
-    const enriched = await Promise.all(list.map(async (item) => {
-      const logs = await db
-        .select({
-          id: approvalLogs.id,
-          status: approvalLogs.status,
-          action: approvalLogs.action,
-          actor: users.name,
-          role: users.role,
-          timestamp: approvalLogs.createdAt,
-          comment: approvalLogs.comment,
-        })
-        .from(approvalLogs)
-        .leftJoin(users, eq(approvalLogs.reviewerId, users.id))
-        .where(eq(approvalLogs.subContentId, item.id))
-        .orderBy(approvalLogs.createdAt);
+    if (list.length === 0) return [];
 
+    const subContentIds = list.map(item => item.id);
+
+    const allLogs = await db
+      .select({
+        id: approvalLogs.id,
+        subContentId: approvalLogs.subContentId,
+        status: approvalLogs.status,
+        action: approvalLogs.action,
+        actor: users.name,
+        role: users.role,
+        timestamp: approvalLogs.createdAt,
+        comment: approvalLogs.comment,
+      })
+      .from(approvalLogs)
+      .leftJoin(users, eq(approvalLogs.reviewerId, users.id))
+      .where(inArray(approvalLogs.subContentId, subContentIds))
+      .orderBy(approvalLogs.createdAt);
+
+    // Enrich with history
+    const enriched = list.map((item) => {
+      const logs = allLogs.filter((log) => log.subContentId === item.id);
       return {
         ...item,
         history: logs.map(l => ({
-          ...l,
+          id: l.id,
+          status: l.status,
+          comment: l.comment,
           timestamp: l.timestamp.toISOString(),
           action: l.action || l.status,
           actor: l.actor || 'System',
           role: l.role || 'SYSTEM'
         }))
       };
-    }));
+    });
 
     return enriched;
   },

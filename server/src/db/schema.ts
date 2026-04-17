@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, uuid, pgEnum, integer, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, pgEnum, integer, boolean, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['CREATOR', 'REVIEWER_L1', 'REVIEWER_L2']);
 
@@ -30,6 +31,12 @@ export const contents = pgTable('contents', {
   createdBy: uuid('created_by').references(() => users.id).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    statusIdx: index('contents_status_idx').on(table.status),
+    createdByIdx: index('contents_created_by_idx').on(table.createdBy),
+    searchIdx: index('contents_search_idx').using('gin', sql`to_tsvector('simple', coalesce(${table.title}, '') || ' ' || coalesce(${table.description}, ''))`),
+  };
 });
 
 export type Content = typeof contents.$inferSelect;
@@ -48,6 +55,13 @@ export const subContents = pgTable('sub_contents', {
   createdBy: uuid('created_by').references(() => users.id).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    statusIdx: index('sub_contents_status_idx').on(table.status),
+    createdByIdx: index('sub_contents_created_by_idx').on(table.createdBy),
+    parentIdx: index('sub_contents_parent_idx').on(table.parentId),
+    searchIdx: index('sub_contents_search_idx').using('gin', sql`to_tsvector('simple', coalesce(${table.title}, '') || ' ' || coalesce(${table.description}, ''))`),
+  };
 });
 
 export type SubContent = typeof subContents.$inferSelect;
@@ -63,6 +77,11 @@ export const approvalLogs = pgTable('approval_logs', {
   comment: text('comment'),
   stage: integer('stage'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    contentIdx: index('approval_logs_content_idx').on(table.contentId),
+    subContentIdx: index('approval_logs_sub_content_idx').on(table.subContentId),
+  };
 });
 
 export type ApprovalLog = typeof approvalLogs.$inferSelect;

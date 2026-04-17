@@ -84,10 +84,11 @@ export function useReviewQueue(
         const tA = lastA ? new Date(lastA.timestamp).getTime() : 0;
         const tB = lastB ? new Date(lastB.timestamp).getTime() : 0;
         return tB - tA;
-      })
-      .slice(0, 5); // Show last 5
+      });
 
     // 4. Stats
+    // Note: These counts are now partially redundant because the server returns accurate stats,
+    // but we keep them for UI feedback on the current loaded set if needed.
     const approvedByMeCount = allItems.filter((item) =>
       item.history.some(
         (h) =>
@@ -100,7 +101,10 @@ export function useReviewQueue(
       item.history.some((h) => h.actor === userName && h.action === 'REJECTED')
     ).length;
 
-    // 5. Apply search filter
+    // 5. Active items for the current tab
+    // Since the server already filters by tab, we just need to flatten the results
+    // and potentially filter by search (though the server handles that too, 
+    // we keep it here as a client-side search refinement layer).
     const needle = search.toLowerCase();
     const sourceItems = tab === 'pending' ? pendingItems : recentItems;
     const filteredItems = needle
