@@ -175,7 +175,7 @@ export function CreateContentPage() {
                         setImageFile(null);
                     }}
                     className={clsx(
-                      'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0',
+                      'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all shrink-0',
                       form.image === url && !form.customImage && !imageFile
                         ? 'border-blue-500 shadow-sm'
                         : 'border-gray-200 hover:border-gray-300'
@@ -190,7 +190,7 @@ export function CreateContentPage() {
                     setImageFile(null);
                   }}
                   className={clsx(
-                    'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all flex-shrink-0',
+                    'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all shrink-0',
                     !form.image && !form.customImage && !imageFile
                       ? 'border-blue-500 text-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300 hover:text-gray-500'

@@ -112,7 +112,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 flex-shrink-0">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 shrink-0">
           <h3 className="text-lg font-bold text-gray-900">
             {item ? 'Edit Sub-content' : 'Add Sub-content'}
           </h3>
@@ -143,7 +143,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
                   (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGES[0];
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
             </div>
 
             {/* Selection Options */}
@@ -160,9 +160,9 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
                         setImageFile(null);
                     }}
                     className={clsx(
-                      'h-10 w-14 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0',
+                      'h-10 w-14 rounded-lg overflow-hidden border-2 transition-all shrink-0',
                       selectedPreset === url && !customImageUrl && !imageFile
-                        ? 'border-blue-500 shadow-sm outline outline-2 outline-blue-500/20'
+                        ? 'border-blue-500 shadow-sm outline outline-blue-500/20'
                         : 'border-gray-100 hover:border-gray-300'
                     )}
                   >
@@ -259,7 +259,7 @@ export function SubContentModal({ parentId, item, isOpen, onClose }: Props) {
         </div>
 
         {/* Footer Buttons - DUAL BUTTON LOGIC */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-3 flex-shrink-0">
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={onClose}

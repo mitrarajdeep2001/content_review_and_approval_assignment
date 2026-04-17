@@ -86,7 +86,7 @@ export function ReviewerDashboard() {
             {/* Stage indicator */}
             <div
               className={clsx(
-                'hidden sm:flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold flex-shrink-0',
+                'hidden sm:flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold shrink-0',
                 stageBg,
                 stageColor
               )}

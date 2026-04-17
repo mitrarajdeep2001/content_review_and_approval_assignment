@@ -33,7 +33,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 shadow-sm group-hover:shadow-md transition-shadow">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-linear-to-br from-blue-600 to-violet-600 shadow-sm group-hover:shadow-md transition-shadow">
               <Zap className="h-4 w-4 text-white" />
             </div>
             <span className="font-bold text-gray-900 text-sm tracking-tight">

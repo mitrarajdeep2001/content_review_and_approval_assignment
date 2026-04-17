@@ -1,9 +1,9 @@
-import type { ContentItem } from '../types';
+import type { ContentItem, SubContent } from '../types';
 import { clsx } from 'clsx';
 import { Check, Clock, AlertCircle, XCircle } from 'lucide-react';
 
 interface Props {
-  item: ContentItem;
+  item: ContentItem | SubContent;
 }
 
 type StepStatus = 'completed' | 'active' | 'pending' | 'rejected';

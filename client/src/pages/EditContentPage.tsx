@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, AlertTriangle, Image as ImageIcon, Type, AlignLeft, Eye } from 'lucide-react';
+import { ArrowLeft, Save, AlertTriangle, Image as ImageIcon, Type, Eye } from 'lucide-react';
 
 const PLACEHOLDER_IMAGES = [
   'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60',
@@ -204,7 +204,7 @@ export function EditContentPage() {
         {/* Rejection feedback banner */}
         {rejectionEntry?.comment && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-red-800 mb-0.5">Changes Requested by Reviewer</p>
               <p className="text-sm text-red-700">"{rejectionEntry.comment}"</p>
@@ -251,7 +251,7 @@ export function EditContentPage() {
                       setIsDirty(true);
                   }}
                   className={clsx(
-                    'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0',
+                    'h-12 w-16 rounded-lg overflow-hidden border-2 transition-all shrink-0',
                     form.image === url && !customImageUrl && !imageFile
                       ? 'border-blue-500 shadow-sm'
                       : 'border-gray-200 hover:border-gray-300'
@@ -268,7 +268,7 @@ export function EditContentPage() {
                   setIsDirty(true);
                 }}
                 className={clsx(
-                  'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all flex-shrink-0',
+                  'h-12 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-xs font-semibold text-gray-400 transition-all shrink-0',
                   !form.image && !customImageUrl && !imageFile
                     ? 'border-blue-500 text-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 hover:text-gray-500'

@@ -93,7 +93,7 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
         )}
       >
         {/* Thumbnail */}
-        <div className="relative h-44 overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="relative h-44 overflow-hidden bg-gray-100 shrink-0">
           <img
             src={getImageUrl(item.image)}
             alt={item.title}
@@ -183,10 +183,10 @@ export function ReviewQueueCard({ item, currentRole, isRecentlyReviewed }: Props
           {/* Meta */}
           <div className="flex items-center gap-3 text-xs text-gray-400 mb-4">
             <span className="flex items-center gap-1 truncate max-w-[120px]">
-              <User className="h-3 w-3 flex-shrink-0" />
+              <User className="h-3 w-3 shrink-0" />
               {creator}
             </span>
-            <span className="flex items-center gap-1 flex-shrink-0">
+            <span className="flex items-center gap-1 shrink-0">
               <Clock className="h-3 w-3" />
               {formatRelative(item.updatedAt)}
             </span>

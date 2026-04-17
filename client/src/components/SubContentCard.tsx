@@ -49,7 +49,7 @@ export function SubContentCard({ item, currentUser, onEdit }: Props) {
     <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow group">
       <div className="flex gap-4">
         {item.image && (
-          <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
+          <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-100 border border-gray-100">
             <img 
               src={getImageUrl(item.image)} 
               alt={item.title} 

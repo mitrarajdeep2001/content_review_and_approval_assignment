@@ -25,6 +25,7 @@ import { formatDate, getImageUrl } from '../utils/helpers';
 import { SubContentList } from '../components/SubContentList';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
+import { ContentItem } from '../types';
 
 type ModalType = 'approve' | 'reject' | 'submit' | 'delete' | null;
 
@@ -471,7 +472,7 @@ export function ContentDetailPage() {
             {/* Sub-Contents / Parent Reference Section */}
             {!isSubMode && item.status === 'APPROVED' && (
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-                <SubContentList parent={item} />
+                <SubContentList parent={item as ContentItem} />
               </div>
             )}
 
@@ -489,7 +490,7 @@ export function ContentDetailPage() {
                 <Link to={`/content/${parentItem.id}`} className="block group">
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 group-hover:border-blue-100 group-hover:bg-blue-50/30 transition-all">
                     <div className="flex items-start gap-3">
-                      <div className="h-12 w-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                      <div className="h-12 w-12 rounded-lg overflow-hidden shrink-0 bg-gray-200">
                         <img 
                           src={getImageUrl(parentItem.image)} 
                           alt="parent" 
