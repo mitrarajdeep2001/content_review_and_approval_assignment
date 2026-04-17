@@ -35,7 +35,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshContents();
-  }, [refreshContents]);
+  }, [refreshContents, currentUser]);
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -68,6 +68,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await api.post('/auth/logout');
       clearSession();
       setCurrentUser(null);
+      setContentList([]);
       toast.success('Logged out successfully');
     } catch {
       toast.error('Logout failed');

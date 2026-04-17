@@ -16,7 +16,6 @@ export function Navbar() {
     setIsLoggingOut(true);
     try {
       await logout();
-      toast.success('Logged out successfully');
       navigate('/login');
     } catch {
       // Error handled in context
