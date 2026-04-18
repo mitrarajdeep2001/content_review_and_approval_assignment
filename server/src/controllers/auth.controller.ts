@@ -14,7 +14,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
   // Set cookie
   res.cookie('cf_user_session', JSON.stringify(user), {
-    httpOnly: false, 
+    httpOnly: true, 
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     sameSite: 'lax',
