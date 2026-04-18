@@ -21,6 +21,12 @@ export const subContentService = {
           eq(subContents.parentId, parentId), 
           or(eq(subContents.status, 'IN_REVIEW'), eq(subContents.status, 'APPROVED'))
         ) as any;
+      } else if (user.role === 'READER') {
+        // Readers ONLY see APPROVED sub-content
+        filter = and(
+          eq(subContents.parentId, parentId),
+          eq(subContents.status, 'APPROVED')
+        ) as any;
       }
     }
 
@@ -102,9 +108,18 @@ export const subContentService = {
     if (!item) throw new Error('Sub-content not found');
     if (item.isLocked) throw new Error('Sub-content is locked and cannot be edited');
 
+    // Prepare update payload
+    const updateData: any = { ...data, updatedAt: new Date() };
+    
+    // If moving to IN_REVIEW, initialize stage and lock it
+    if (data.status === 'IN_REVIEW') {
+      updateData.currentReviewStage = 1;
+      updateData.isLocked = true;
+    }
+
     const [updated] = await db
       .update(subContents)
-      .set({ ...data, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(subContents.id, id))
       .returning();
 
@@ -112,8 +127,9 @@ export const subContentService = {
       subContentId: id,
       reviewerId: userId,
       status: updated.status,
-      action: 'EDITED',
-      comment: 'Sub-content updated',
+      action: data.status === 'IN_REVIEW' ? 'SUBMITTED' : 'EDITED',
+      comment: data.status === 'IN_REVIEW' ? 'Resubmitted for review' : 'Sub-content updated',
+      stage: updated.currentReviewStage
     });
 
     return updated;
