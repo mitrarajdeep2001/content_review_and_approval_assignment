@@ -132,13 +132,12 @@ export function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
-            </div>
-            <div className="relative flex justify-center text-xs text-slate-500">
-              <span className="bg-transparent px-3">or quick sign in as</span>
-            </div>
+          <div className="flex items-center my-6">
+            <div className="flex-1 h-px bg-white/10"></div>
+            <span className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              or quick sign in as
+            </span>
+            <div className="flex-1 h-px bg-white/10"></div>
           </div>
 
           {/* Quick Login Cards */}
