@@ -17,7 +17,7 @@ export const login = catchAsync(async (req: Request, res: Response) => {
     httpOnly: true, 
     secure: process.env.NODE_ENV === 'production',
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   });
 
   return res.status(200).json(user);
