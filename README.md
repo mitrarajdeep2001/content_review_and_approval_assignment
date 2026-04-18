@@ -45,7 +45,7 @@ docker-compose up -d
 ### 3. Frontend Configuration
 1. Navigate to the `client` directory: `cd client`
 2. Create a `.env` file from the sample: `cp .env.sample .env`
-3. Set `VITE_API_BASE_URL=http://localhost:3000` (or your server port).
+3. Set `VITE_API_BASE_URL=http://localhost:5000` (or your server port).
 4. Install dependencies: `npm install`
 5. Start the dev server: `npm run dev`
 

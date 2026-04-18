@@ -14,7 +14,7 @@ export const createSubContent = catchAsync(async (req: Request, res: Response) =
   const body = { ...req.body };
   
   if (req.file) {
-    body.image = req.file.path;
+    body.image = `/uploads/${req.file.filename}`;
   }
 
   const item = await subContentService.createSubContent(req.params.parentId, body, user.id);
@@ -26,7 +26,7 @@ export const updateSubContent = catchAsync(async (req: Request, res: Response) =
   const body = { ...req.body };
 
   if (req.file) {
-    body.image = req.file.path;
+    body.image = `/uploads/${req.file.filename}`;
   }
 
   const item = await subContentService.updateSubContent(req.params.id, body, user.id);

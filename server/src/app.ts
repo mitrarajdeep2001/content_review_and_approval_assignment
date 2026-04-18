@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes.js';
@@ -19,6 +20,9 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve static files from public/uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);

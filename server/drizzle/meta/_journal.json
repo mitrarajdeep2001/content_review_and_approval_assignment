@@ -78,6 +78,13 @@
       "when": 1776482528009,
       "tag": "0010_fuzzy_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776495505000,
+      "tag": "0011_add_action_to_approval_logs",
+      "breakpoints": true
     }
   ]
 }

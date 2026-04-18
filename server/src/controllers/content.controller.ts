@@ -42,7 +42,7 @@ export const createContent = catchAsync(async (req: Request, res: Response) => {
   const { title, description, body, status } = req.body;
   let image = req.body.image;
   if (req.file) {
-    image = req.file.path;
+    image = `/uploads/${req.file.filename}`;
   }
 
   const initialStatus = status === 'IN_REVIEW' ? 'IN_REVIEW' : 'DRAFT';
@@ -86,7 +86,7 @@ export const updateContent = catchAsync(async (req: Request, res: Response) => {
   const { title, description, body } = req.body;
   let image = req.body.image;
   if (req.file) {
-    image = req.file.path;
+    image = `/uploads/${req.file.filename}`;
   }
 
   const updated = await contentService.updateContent(
