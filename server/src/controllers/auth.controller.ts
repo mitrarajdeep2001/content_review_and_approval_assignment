@@ -24,7 +24,11 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const logout = (req: Request, res: Response) => {
-  res.clearCookie('cf_user_session');
+  res.clearCookie('cf_user_session', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
   return res.status(200).json({ message: 'Logged out successfully' });
 };
 
@@ -39,7 +43,11 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
   const user = await authService.getUserById(parsedUser.id);
 
   if (!user) {
-    res.clearCookie('cf_user_session');
+    res.clearCookie('cf_user_session', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    });
     throw new AppError('User not found', 401);
   }
 
