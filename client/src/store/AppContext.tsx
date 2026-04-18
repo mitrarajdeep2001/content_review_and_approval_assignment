@@ -47,6 +47,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (userData !== undefined) {
       setCurrentUser(userData);
+      // Always reset filters when the global user session state changes
+      setFiltersState({ status: 'ALL', search: '' });
+      
       if (userData) {
         saveSession(userData);
       } else {
@@ -95,6 +98,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (credentials: { email: string; password: string }) => {
     try {
       const response = await api.post('/auth/login', credentials);
+      // Reset filters before updating user state
+      setFiltersState({ status: 'ALL', search: '' });
       setCurrentUser(response.data);
       saveSession(response.data);
       queryClient.setQueryData(USER_QUERY_KEY, response.data);
@@ -110,8 +115,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post('/auth/logout');
       clearSession();
-      queryClient.setQueryData(USER_QUERY_KEY, null);
-      queryClient.setQueryData(CONTENT_QUERY_KEY, { pages: [], pageParams: [] });
+      // Explicitly reset user and filters immediately to trigger navigation
+      setCurrentUser(null);
+      setFiltersState({ status: 'ALL', search: '' });
+      queryClient.clear(); 
       toast.success('Logged out successfully');
     } catch {
       toast.error('Logout failed');
