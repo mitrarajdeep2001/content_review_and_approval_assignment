@@ -49,6 +49,17 @@ docker-compose up -d
 4. Install dependencies: `npm install`
 5. Start the dev server: `npm run dev`
 
+## 🌐 Deployment
+
+### Frontend (Vercel)
+To deploy the frontend to Vercel:
+1. Set the **Root Directory** to `client`.
+2. Vercel will auto-detect **Vite** as the framework.
+3. Ensure the environment variable `VITE_API_BASE_URL` is set to your production backend URL.
+
+### Fix for 404 on Refresh
+If you experience `404: NOT_FOUND` when refreshing pages on Vercel, a `vercel.json` has been added to the `client` directory to handle SPA routing by rewriting all requests to `index.html`.
+
 ## 🔄 Workflow Design
 
 The system implements a state-driven content lifecycle:

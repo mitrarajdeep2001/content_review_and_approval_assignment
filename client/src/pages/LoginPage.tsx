@@ -54,7 +54,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-blue-600/10 blur-3xl" />
@@ -64,7 +64,7 @@ export function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-2xl shadow-blue-500/30 mb-4">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-linear-to-br from-blue-500 to-violet-600 shadow-2xl shadow-blue-500/30 mb-4">
             <Zap className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -153,18 +153,18 @@ export function LoginPage() {
                 <img
                   src={user.avatar}
                   alt={user.name}
-                  className="h-9 w-9 rounded-full bg-slate-700 flex-shrink-0"
+                  className="h-9 w-9 rounded-full bg-slate-700 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-white">{user.name}</div>
                   <div className="text-xs text-slate-400">{user.email}</div>
                 </div>
                 {isLoading && email === user.email ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white flex-shrink-0" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white shrink-0" />
                 ) : (
                   <span
                     className={clsx(
-                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0',
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0',
                       ROLE_COLORS[user.role]
                     )}
                   >
