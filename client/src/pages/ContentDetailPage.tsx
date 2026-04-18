@@ -36,7 +36,7 @@ export function ContentDetailPage() {
   const { 
     contentList, 
     submitContent, approveContent, rejectContent, deleteContent,
-    submitSubContent, approveSubContent, rejectSubContent, deleteSubContent 
+    submitSubContent, approveSubContent, rejectSubContent, deleteSubContent, markAsRead 
   } = useApp();
   const navigate = useNavigate();
   
@@ -77,6 +77,15 @@ export function ContentDetailPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const isReader = currentUser?.role === 'READER';
+
+  // Mark as read when opened by a reader
+  useEffect(() => {
+    if (isReader && item) {
+      markAsRead(item.id, isSubMode);
+    }
+  }, [isReader, item, isSubMode, markAsRead]);
 
   if (!currentUser) return null;
 
@@ -230,7 +239,7 @@ export function ContentDetailPage() {
                     'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&auto=format&fit=crop&q=60';
                 }}
               />
-              {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && (
+              {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && !isReader && (
                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                   <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm font-medium text-gray-700">
                     <Lock className="h-4 w-4" />
@@ -342,15 +351,18 @@ export function ContentDetailPage() {
           {/* Sidebar */}
           <aside className="lg:col-span-1">
             <div className="lg:sticky lg:top-24 space-y-5 self-start">
-            {/* Workflow Progress */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-800 mb-4">Workflow Progress</h3>
-              <WorkflowProgress item={item} />
-            </div>
+            
+            {!isReader && (
+              <>
+                {/* Workflow Progress */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-4">Workflow Progress</h3>
+                  <WorkflowProgress item={item} />
+                </div>
 
-            {/* Actions Panel */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-800 mb-4">Actions</h3>
+                {/* Actions Panel */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-4">Actions</h3>
 
               {item.status === 'APPROVED' ? (
                 <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium py-2">
@@ -468,6 +480,8 @@ export function ContentDetailPage() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
             {/* Sub-Contents / Parent Reference Section */}
             {!isSubMode && item.status === 'APPROVED' && (
@@ -511,10 +525,12 @@ export function ContentDetailPage() {
             )}
 
             {/* Approval History */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-800 mb-4">Approval History</h3>
-              <ApprovalTimeline history={item.history} />
-            </div>
+            {!isReader && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4">Approval History</h3>
+                <ApprovalTimeline history={item.history} />
+              </div>
+            )}
           </div>
         </aside>
       </div>

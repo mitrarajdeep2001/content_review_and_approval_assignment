@@ -1,5 +1,5 @@
 import { db } from '../db/index.js';
-import { contents, approvalLogs, users, NewContent, subContents } from '../db/schema.js';
+import { contents, approvalLogs, users, NewContent, subContents, readReceipts } from '../db/schema.js';
 import { desc, eq, or, and, like, sql, inArray } from 'drizzle-orm';
 import { workflowHelper, ReviewAction } from './workflow.helper.js';
 
@@ -22,6 +22,8 @@ export const contentService = {
     let baseFilter;
     if (user.role === 'CREATOR') {
       baseFilter = or(eq(contents.createdBy, user.id), eq(contents.status, 'APPROVED'));
+    } else if (user.role === 'READER') {
+      baseFilter = eq(contents.status, 'APPROVED');
     } else {
       // Reviewers can generally see anything in review or approved
       baseFilter = or(eq(contents.status, 'IN_REVIEW'), eq(contents.status, 'APPROVED'));
@@ -52,7 +54,13 @@ export const contentService = {
     }
 
     if (status && status !== 'ALL') {
-      filters.push(eq(contents.status, status as any));
+      if (status === 'READ') {
+        filters.push(sql`(select count(*) from ${readReceipts} rr where rr.content_id = ${contents.id} and rr.user_id = ${user.id}) > 0`);
+      } else if (status === 'UNREAD') {
+        filters.push(sql`(select count(*) from ${readReceipts} rr where rr.content_id = ${contents.id} and rr.user_id = ${user.id}) = 0`);
+      } else {
+        filters.push(eq(contents.status, status as any));
+      }
     }
     if (search) {
       const cleanSearch = search
@@ -105,6 +113,11 @@ export const contentService = {
     const contentIds = pageContents.map((row) => row.content.id);
 
     // 3. Fetch Sub-resources ONLY for target items
+    const subContentFilters: any[] = [inArray(subContents.parentId, contentIds)];
+    if (user.role === 'READER') {
+      subContentFilters.push(eq(subContents.status, 'APPROVED'));
+    }
+
     const pSubContents = db
       .select({
         sub: subContents,
@@ -114,7 +127,7 @@ export const contentService = {
       .from(subContents)
       .leftJoin(users, eq(subContents.createdBy, users.id))
       .leftJoin(contents, eq(subContents.parentId, contents.id))
-      .where(inArray(subContents.parentId, contentIds));
+      .where(and(...subContentFilters));
 
     const pLogs = db
       .select({
@@ -205,6 +218,25 @@ export const contentService = {
         .from(contents)
         .where(eq(contents.createdBy, user.id));
       return counts;
+    } else if (user.role === 'READER') {
+      const [counts] = await db
+        .select({
+          total: sql<number>`count(distinct ${contents.id})`,
+          read: sql<number>`count(distinct case when ${readReceipts.id} is not null then ${contents.id} else null end)`,
+        })
+        .from(contents)
+        .leftJoin(readReceipts, and(eq(readReceipts.contentId, contents.id), eq(readReceipts.userId, user.id)))
+        .where(eq(contents.status, 'APPROVED'));
+
+      return {
+        total: Number(counts?.total || 0),
+        drafts: 0,
+        inReview: 0,
+        approved: Number(counts?.total || 0),
+        needsAction: 0,
+        read: Number(counts?.read || 0),
+        unread: Number(counts?.total || 0) - Number(counts?.read || 0),
+      };
     } else {
       const isL1 = user.role === 'REVIEWER_L1';
       const stage = isL1 ? 1 : 2;
@@ -433,5 +465,19 @@ export const contentService = {
     });
 
     return updated;
+  },
+  // ─── Mark as Read ────────────────────────────────────────────────────────
+  async markAsRead(userId: string, contentIdOrSubId: string, isSubContent: boolean) {
+    if (isSubContent) {
+      await db.insert(readReceipts).values({
+        userId,
+        subContentId: contentIdOrSubId,
+      }).onConflictDoNothing();
+    } else {
+      await db.insert(readReceipts).values({
+        userId,
+        contentId: contentIdOrSubId,
+      }).onConflictDoNothing();
+    }
   },
 };

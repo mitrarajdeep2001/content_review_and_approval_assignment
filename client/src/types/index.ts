@@ -1,5 +1,5 @@
 // ─── Roles ────────────────────────────────────────────────────────────────────
-export type Role = 'CREATOR' | 'REVIEWER_L1' | 'REVIEWER_L2';
+export type Role = 'CREATOR' | 'REVIEWER_L1' | 'REVIEWER_L2' | 'READER';
 
 // ─── Content Status ───────────────────────────────────────────────────────────
 export type ContentStatus =
@@ -104,6 +104,9 @@ export interface AppContextType {
   // Filters
   filters: FilterState;
   setFilters: (filters: Partial<FilterState>) => void;
+
+  // Reader Tracking
+  markAsRead: (id: string, isSubContent?: boolean) => Promise<void>;
 
   // Infinite Scroll & Stats
   isLoading: boolean;

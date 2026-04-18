@@ -39,7 +39,7 @@ const queryClient = new QueryClient({
 function RoleBasedHome() {
   const { currentUser } = useApp();
   if (!currentUser) return null;
-  return currentUser.role === 'CREATOR' ? <ContentListPage /> : <ReviewerDashboard />;
+  return currentUser.role === 'CREATOR' || currentUser.role === 'READER' ? <ContentListPage /> : <ReviewerDashboard />;
 }
 
 export default function App() {

@@ -29,6 +29,13 @@ async function seed() {
       role: 'REVIEWER_L2' as const,
       avatar: 'https://ui-avatars.com/api/?name=Taylor+Kim&background=0f766e&color=fff&size=64&bold=true',
     },
+    {
+      name: 'Sam Reader',
+      email: 'sam@contentflow.io',
+      password: hashedPassword,
+      role: 'READER' as const,
+      avatar: 'https://ui-avatars.com/api/?name=Sam+Reader&background=14b8a6&color=fff&size=64&bold=true',
+    },
   ];
 
   try {

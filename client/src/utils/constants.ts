@@ -27,12 +27,14 @@ export const ROLE_LABELS: Record<Role, string> = {
   CREATOR: 'Creator',
   REVIEWER_L1: 'Reviewer L1',
   REVIEWER_L2: 'Reviewer L2',
+  READER: 'Reader',
 };
 
 export const ROLE_COLORS: Record<Role, string> = {
   CREATOR: 'bg-violet-100 text-violet-700',
   REVIEWER_L1: 'bg-sky-100 text-sky-700',
   REVIEWER_L2: 'bg-indigo-100 text-indigo-700',
+  READER: 'bg-teal-100 text-teal-700',
 };
 
 export const STAGE_LABELS: Record<1 | 2, string> = {

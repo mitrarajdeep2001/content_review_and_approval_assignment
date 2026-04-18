@@ -208,3 +208,19 @@ export const rejectContent = async (req: Request, res: Response) => {
     res.status(isKnown ? 400 : 500).json({ message: error?.message || 'Internal server error' });
   }
 };
+
+// ─── POST /api/content/:id/read ────────────────────────────────────────────────
+export const markAsRead = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isSubContent } = req.body;
+    const user = getSessionUser(req);
+    if (!user) return res.status(401).json({ message: 'Not authenticated' });
+
+    await contentService.markAsRead(user.id, id, !!isSubContent);
+    res.status(200).json({ message: 'Marked as read' });
+  } catch (error: any) {
+    console.error('markAsRead error', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

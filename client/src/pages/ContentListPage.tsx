@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, PlusCircle, TrendingUp, FileText, Clock, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, PlusCircle, TrendingUp, FileText, Clock, CheckCircle2, BookOpen } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { useApp } from '../store/AppContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
@@ -50,6 +50,9 @@ export function ContentListPage() {
 
   if (!currentUser) return null;
 
+  const isReader = currentUser.role === 'READER';
+  const isCreator = currentUser.role === 'CREATOR';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -57,12 +60,14 @@ export function ContentListPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Content Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isReader ? 'Published Content' : 'Content Dashboard'}
+            </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              Manage and track your content approval workflow
+              {isReader ? 'Discover and read approved publications' : 'Manage and track your content approval workflow'}
             </p>
           </div>
-          {currentUser.role === 'CREATOR' && (
+          {isCreator && (
             <Link
               to="/create"
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-sm self-start sm:self-auto"
@@ -77,14 +82,16 @@ export function ContentListPage() {
         {isLoading ? (
           <SkeletonStats />
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+          <div className={clsx("grid gap-3 mb-8", isReader ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 lg:grid-cols-5")}>
             {[
-              { label: 'Total Content', value: stats.total, icon: TrendingUp, color: 'text-gray-600', bg: 'bg-gray-100' },
-              { label: 'Drafts', value: stats.drafts, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'In Review', value: stats.inReview, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-              { label: 'Approved', value: stats.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Needs Revision', value: stats.needsAction, icon: Clock, color: 'text-red-600', bg: 'bg-red-50' },
-            ].map(({ label, value, icon: Icon, color, bg }) => (
+              { label: 'Total Content', value: stats.total, icon: TrendingUp, color: 'text-gray-600', bg: 'bg-gray-100', show: true },
+              { label: 'Read', value: stats.read, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50', show: isReader },
+              { label: 'Unread', value: stats.unread, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', show: isReader },
+              { label: 'Drafts', value: stats.drafts, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', show: !isReader },
+              { label: 'In Review', value: stats.inReview, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', show: !isReader },
+              { label: 'Approved', value: stats.approved, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', show: !isReader },
+              { label: 'Needs Revision', value: stats.needsAction, icon: Clock, color: 'text-red-600', bg: 'bg-red-50', show: !isReader },
+            ].filter(s => s.show).map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-gray-500">{label}</span>
@@ -114,23 +121,43 @@ export function ContentListPage() {
             </div>
 
             {/* Status filter */}
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <Filter className="h-4 w-4 text-gray-400 shrink-0" />
-              {STATUS_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setFilters({ status: value })}
-                  className={clsx(
-                    'rounded-lg px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap',
-                    filters.status === value
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {isReader ? (
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <Filter className="h-4 w-4 text-gray-400 shrink-0" />
+                {[{ value: 'ALL', label: 'All Content' }, { value: 'READ', label: 'Read' }, { value: 'UNREAD', label: 'Unread' }].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFilters({ status: value as any })}
+                    className={clsx(
+                      'rounded-lg px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap',
+                      filters.status === value
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <Filter className="h-4 w-4 text-gray-400 shrink-0" />
+                {STATUS_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setFilters({ status: value })}
+                    className={clsx(
+                      'rounded-lg px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap',
+                      filters.status === value
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -148,7 +175,7 @@ export function ContentListPage() {
                 : 'Get started by creating your first content piece.'
             }
             action={
-              currentUser.role === 'CREATOR' ? (
+              isCreator ? (
                 <Link
                   to="/create"
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
@@ -167,7 +194,13 @@ export function ContentListPage() {
                 {filters.status !== 'ALL' && (
                   <>
                     {' '}with status{' '}
-                    <StatusBadge status={filters.status as ContentStatus} size="sm" />
+                    {isReader ? (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 border border-blue-200">
+                        {filters.status}
+                      </span>
+                    ) : (
+                      <StatusBadge status={filters.status as ContentStatus} size="sm" />
+                    )}
                   </>
                 )}
               </p>

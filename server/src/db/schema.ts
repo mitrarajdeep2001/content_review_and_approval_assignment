@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid, pgEnum, integer, boolean, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
-export const userRoleEnum = pgEnum('user_role', ['CREATOR', 'REVIEWER_L1', 'REVIEWER_L2']);
+export const userRoleEnum = pgEnum('user_role', ['CREATOR', 'REVIEWER_L1', 'REVIEWER_L2', 'READER']);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -86,3 +86,19 @@ export const approvalLogs = pgTable('approval_logs', {
 
 export type ApprovalLog = typeof approvalLogs.$inferSelect;
 export type NewApprovalLog = typeof approvalLogs.$inferInsert;
+
+export const readReceipts = pgTable('read_receipts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  contentId: uuid('content_id').references(() => contents.id, { onDelete: 'cascade' }),
+  subContentId: uuid('sub_content_id').references(() => subContents.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => {
+  return {
+    userContentIdx: index('read_receipts_user_content_idx').on(table.userId, table.contentId),
+    userSubContentIdx: index('read_receipts_user_sub_content_idx').on(table.userId, table.subContentId),
+  };
+});
+
+export type ReadReceipt = typeof readReceipts.$inferSelect;
+export type NewReadReceipt = typeof readReceipts.$inferInsert;

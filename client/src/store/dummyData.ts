@@ -23,6 +23,13 @@ export const DEMO_USERS: AuthUser[] = [
     role: 'REVIEWER_L2',
     avatar: 'https://ui-avatars.com/api/?name=Taylor+Kim&background=0f766e&color=fff&size=64&bold=true',
   },
+  {
+    id: 'u4',
+    name: 'Sam Reader',
+    email: 'sam@contentflow.io',
+    role: 'READER',
+    avatar: 'https://ui-avatars.com/api/?name=Sam+Reader&background=14b8a6&color=fff&size=64&bold=true',
+  },
 ];
 
 // ─── Mock Content Items ───────────────────────────────────────────────────────

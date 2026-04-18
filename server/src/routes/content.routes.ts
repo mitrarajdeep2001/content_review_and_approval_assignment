@@ -10,6 +10,7 @@ import {
   submitContent,
   approveContent,
   rejectContent,
+  markAsRead,
 } from '../controllers/content.controller.js';
 import { getSubContentsByParent, createSubContent } from '../controllers/subContent.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -27,6 +28,7 @@ router.delete('/:id', authenticate, deleteContent);
 router.patch('/:id/submit', authenticate, submitContent);
 router.patch('/:id/approve', authenticate, approveContent);
 router.patch('/:id/reject', authenticate, rejectContent);
+router.post('/:id/read', authenticate, markAsRead);
 
 // ─── Sub-Content ──────────────────────────────────────────────────────────────
 router.get('/:parentId/sub-content', authenticate, getSubContentsByParent);

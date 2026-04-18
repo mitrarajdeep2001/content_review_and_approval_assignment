@@ -29,7 +29,7 @@ export function ContentCard({ item, currentRole }: Props) {
           }}
         />
         {/* Lock overlay */}
-        {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && (
+        {(item.isLocked || item.status === 'IN_REVIEW' || item.status === 'APPROVED') && currentRole !== 'READER' && (
           <div className="absolute top-2 right-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-sm px-2 py-0.5 text-xs font-medium text-gray-600 shadow-sm border border-gray-200">
               <Lock className="h-3 w-3" />
@@ -38,6 +38,7 @@ export function ContentCard({ item, currentRole }: Props) {
           </div>
         )}
         {/* Status overlay */}
+        {currentRole !== 'READER' && (
         <div className="absolute bottom-2 left-2 flex flex-col gap-1 items-start">
           <StatusBadge status={item.status} size="sm" />
           {item.status === 'IN_REVIEW' && item.currentReviewStage && (
@@ -46,6 +47,7 @@ export function ContentCard({ item, currentRole }: Props) {
             </span>
           )}
         </div>
+        )}
       </div>
 
       {/* Body */}

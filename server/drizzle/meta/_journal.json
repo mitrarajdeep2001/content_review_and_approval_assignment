@@ -64,6 +64,20 @@
       "when": 1776439146105,
       "tag": "0008_sad_mother_askani",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776481804778,
+      "tag": "0009_early_sabretooth",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776482528009,
+      "tag": "0010_fuzzy_junta",
+      "breakpoints": true
     }
   ]
 }

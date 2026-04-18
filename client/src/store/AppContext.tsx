@@ -323,6 +323,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [queryClient]
   );
 
+  // ─── Mark as Read ──────────────────────────────────────────────────────────
+  const markAsRead = useCallback(
+    async (id: string, isSubContent?: boolean) => {
+      if (!currentUser) return;
+      try {
+        await api.post(`/content/${id}/read`, { isSubContent });
+        queryClient.invalidateQueries({ queryKey: CONTENT_QUERY_KEY });
+      } catch (error) {
+        console.error('Failed to mark as read', error);
+      }
+    },
+    [currentUser, queryClient]
+  );
+
   const value = useMemo<AppContextType>(
     () => ({
       currentUser,
@@ -341,6 +355,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       submitSubContent,
       approveSubContent,
       rejectSubContent,
+      markAsRead,
       filters,
       setFilters,
       isLoading,
@@ -366,6 +381,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       submitSubContent,
       approveSubContent,
       rejectSubContent,
+      markAsRead,
       filters,
       setFilters,
       isLoading,
