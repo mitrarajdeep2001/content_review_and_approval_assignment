@@ -9,56 +9,53 @@ This project follows a modern **Client-Server architecture** with a clear separa
 - **Frontend**: A high-performance Single Page Application (SPA) built with **React** and **Vite**, styled with **Tailwind CSS** for a premium UI/UX.
 - **Backend**: A modular **Node.js/Express** API following a layered architecture (**Routes -> Controllers -> Services**) for maintainability and scalability.
 - **Database**: **PostgreSQL** for reliable data storage, managed through **Drizzle ORM** for type-safe database interactions and migrations.
-- **Storage**: **Cloudinary** integration for seamless media upload and management.
+- **Storage**: Local filesystem storage for seamless media upload and management.
 - **Validation**: Strict runtime schema validation using **Zod** on the backend to ensure data integrity.
 
 ## 🛠️ Setup Instructions
 
+The easiest way to run the entire application is using **Docker**.
+
 ### Prerequisites
-- Node.js (v18+)
 - Docker & Docker Compose
-- npm or yarn
 
-### 1. Database Setup
-Start the PostgreSQL database and pgAdmin using Docker:
-```bash
-docker-compose up -d
-```
-*Port 5432 for Postgres and 5050 for pgAdmin (default).*
-
-### 2. Backend Configuration
-1. Navigate to the `server` directory: `cd server`
-2. Create a `.env` file from the sample: `cp .env.sample .env`
-3. Fill in the required environment variables:
-   - `DATABASE_URL`: `postgresql://admin:admin123@localhost:5432/content_db`
-   - `SESSION_SECRET`: A secure random string
-   - `CLOUDINARY_` credentials for image uploads.
-4. Install dependencies: `npm install`
-5. Run migrations and seeds:
+### 🚀 Run the Application
+1. **Clone the repository**:
    ```bash
-   npm run db:generate
-   npm run db:migrate
-   npm run db:seed
+   git clone <repository-url>
+   cd content_review_and_approval_assignment
    ```
-6. Start the dev server: `npm run dev`
 
-### 3. Frontend Configuration
-1. Navigate to the `client` directory: `cd client`
-2. Create a `.env` file from the sample: `cp .env.sample .env`
-3. Set `VITE_API_BASE_URL=http://localhost:5000` (or your server port).
-4. Install dependencies: `npm install`
-5. Start the dev server: `npm run dev`
+2. **Configure Environment**:
+   The root directory contains a `.env` file with defaults. You can modify it if needed, but the defaults are pre-configured to work with Docker.
 
-## 🌐 Deployment
+3. **Start the services**:
+   ```bash
+   docker compose up --build -d
+   ```
+   This command will:
+   - Start the PostgreSQL database
+   - Start pgAdmin (accessible at `http://localhost:5050`)
+   - Build and start the Backend API (accessible at `http://localhost:5000`)
+   - Build and start the Frontend Web App (accessible at `http://localhost:5173`)
+   - Automatically run database migrations and seeds.
 
-### Frontend (Vercel)
-To deploy the frontend to Vercel:
-1. Set the **Root Directory** to `client`.
-2. Vercel will auto-detect **Vite** as the framework.
-3. Ensure the environment variable `VITE_API_BASE_URL` is set to your production backend URL.
+### 📊 Accessing Services
+- **Web App**: [http://localhost:5173](http://localhost:5173)
+- **API Server**: [http://localhost:5000](http://localhost:5000)
+- **pgAdmin**: [http://localhost:5050](http://localhost:5050)
+  - *Login*: `admin@mail.com` / `admin123`
+  - *Server*: Use `postgres` as the hostname, `5432` as port.
 
-### Fix for 404 on Refresh
-If you experience `404: NOT_FOUND` when refreshing pages on Vercel, a `vercel.json` has been added to the `client` directory to handle SPA routing by rewriting all requests to `index.html`.
+### 🔑 Demo Credentials
+Use these accounts to test the different role-based workflows (Password for all: `password123`):
+
+| Role | Email | Permissions |
+| :--- | :--- | :--- |
+| **Creator** | `alex@contentflow.io` | Create & edit content |
+| **Reviewer L1** | `jordan@contentflow.io` | First level approval |
+| **Reviewer L2** | `taylor@contentflow.io` | Final level approval |
+| **Reader** | `sam@contentflow.io` | View approved content |
 
 ## 🔄 Workflow Design
 
@@ -83,7 +80,7 @@ The database schema is designed to support complex content hierarchies and audit
 ## 💡 Assumptions and Tradeoffs
 
 - **Status-Driven Workflow**: Chose a flexible status-based state machine over rigid stage paths to allow for future expansion of review tiers.
-- **Cloudinary for Media**: Opted for a cloud-based CDN for image management to ensure fast delivery and reduce server storage overhead.
+- **Local Media Storage**: Opted for local filesystem storage to keep the system self-contained and simplify deployment for this assignment.
 - **Drizzle ORM**: Selected for its "type-safe by design" approach which reduces runtime errors and provides excellent developer experience with TypeScript.
 - **Global State Management**: Used TanStack Query for server state management to handle caching and synchronization efficiently.
 
