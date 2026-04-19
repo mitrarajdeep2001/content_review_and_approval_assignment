@@ -25,7 +25,8 @@ import { formatDate, getImageUrl } from '../utils/helpers';
 import { SubContentList } from '../components/SubContentList';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
-import { ContentItem } from '../types';
+import { SubContentModal } from '../components/SubContentModal';
+import { ContentItem, SubContent } from '../types';
 
 type ModalType = 'approve' | 'reject' | 'submit' | 'delete' | null;
 
@@ -42,6 +43,7 @@ export function ContentDetailPage() {
   
   const isSubMode = pathname.includes('/sub-content/');
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'submit' | 'approve' | 'reject' | 'delete' | null>(null);
 
   // Find either parent item or sub-content item with its parent
@@ -394,13 +396,23 @@ export function ContentDetailPage() {
 
                   {/* Edit */}
                   {canEdit && (
-                    <Link
-                      to={`/edit/${item.id}`}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Edit Content
-                    </Link>
+                    isSubMode ? (
+                      <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        Edit Content
+                      </button>
+                    ) : (
+                      <Link
+                        to={`/edit/${item.id}`}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-2.5 text-sm font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        Edit Content
+                      </Link>
+                    )
                   )}
 
                   {/* Delete */}
@@ -600,6 +612,15 @@ export function ContentDetailPage() {
         onConfirm={handleDelete}
         onCancel={() => setActiveModal(null)}
       />
+
+      {isSubMode && parentItem && (
+        <SubContentModal
+          parentId={parentItem.id}
+          item={item as SubContent}
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

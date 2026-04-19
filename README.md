@@ -22,7 +22,7 @@ The easiest way to run the entire application is using **Docker**.
 ### 🚀 Run the Application
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/mitrarajdeep2001/content_review_and_approval_assignment.git Or download the source code zip from the mail
+   download the source-code zip from the mail or git clone https://github.com/mitrarajdeep2001/content_review_and_approval_assignment.git
    cd content_review_and_approval_assignment
    ```
 
