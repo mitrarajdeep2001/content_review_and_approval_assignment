@@ -22,7 +22,7 @@ The easiest way to run the entire application is using **Docker**.
 ### 🚀 Run the Application
 1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/mitrarajdeep2001/content_review_and_approval_assignment.git Or download the source code zip from the mail
    cd content_review_and_approval_assignment
    ```
 
@@ -96,4 +96,4 @@ The database schema is designed to support complex content hierarchies and audit
 This project leveraged AI to accelerate development and ensure high code quality:
 
 - **ChatGPT**: Used for planning the architecture of the app.
-- **Antigravity**: Utilized extensively to build a nice UI/UX, some complex frontend logic, provide real-time inline code suggestions and write README.md file.
+- **Antigravity**: Utilized extensively to build a nice UI/UX, used inline code suggestions and write README.md file.
