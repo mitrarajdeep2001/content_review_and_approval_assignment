@@ -21,7 +21,7 @@ export const contentService = {
     // 1. Build Base access Filter
     let baseFilter;
     if (user.role === 'CREATOR') {
-      baseFilter = or(eq(contents.createdBy, user.id), eq(contents.status, 'APPROVED'));
+      baseFilter = eq(contents.createdBy, user.id);
     } else if (user.role === 'READER') {
       baseFilter = eq(contents.status, 'APPROVED');
     } else {

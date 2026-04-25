@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { subContentService } from '../services/subContent.service.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import { AppError } from '../utils/AppError.js';
 
 export const getSubContentsByParent = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;

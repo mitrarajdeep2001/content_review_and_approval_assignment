@@ -10,16 +10,23 @@ export const subContentService = {
     
     if (user) {
       if (user.role === 'CREATOR') {
-        // Creators see their own sub-content + all APPROVED sub-content
+        // Creators see their own sub-content
         filter = and(
           eq(subContents.parentId, parentId), 
-          or(eq(subContents.createdBy, user.id), eq(subContents.status, 'APPROVED'))
+          eq(subContents.createdBy, user.id)
         ) as any;
       } else if (user.role === 'REVIEWER_L1' || user.role === 'REVIEWER_L2') {
         // Reviewers see all IN_REVIEW + all APPROVED sub-content
+        const stage = user.role === 'REVIEWER_L1' ? 1 : 2;
         filter = and(
           eq(subContents.parentId, parentId), 
-          or(eq(subContents.status, 'IN_REVIEW'), eq(subContents.status, 'APPROVED'))
+          or(
+            and(
+              eq(subContents.status, 'IN_REVIEW'),
+              eq(subContents.currentReviewStage, stage)
+            ),
+            eq(subContents.status, 'APPROVED')
+          )
         ) as any;
       } else if (user.role === 'READER') {
         // Readers ONLY see APPROVED sub-content
